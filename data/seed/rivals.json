@@ -1,0 +1,83 @@
+[
+  {
+    "id": "booking",
+    "name": "Booking.com",
+    "hq_country": "Netherlands",
+    "category": "B2C",
+    "business_model": "OTA marketplace connecting travelers with accommodation providers. Commission-based revenue on bookings.",
+    "ai_strategy": "AI-powered personalized search ranking, smart pricing suggestions, and generative AI travel planning assistant integrated into the search flow.",
+    "website": "https://www.booking.com"
+  },
+  {
+    "id": "expedia",
+    "name": "Expedia",
+    "hq_country": "USA",
+    "category": "B2C",
+    "business_model": "Full-service OTA covering flights, hotels, car rentals, and packages. Merchant and agency models.",
+    "ai_strategy": "AI-driven itinerary builder (One Key rewards integration), virtual travel agent chatbot, and machine-learning yield optimization.",
+    "website": "https://www.expedia.com"
+  },
+  {
+    "id": "trip",
+    "name": "Trip.com",
+    "hq_country": "China",
+    "category": "B2C",
+    "business_model": "Dominant OTA in Asia-Pacific covering flights, rail, hotels and packaged tours. Strong corporate travel arm.",
+    "ai_strategy": "AI Trip Planner using LLMs for natural-language itinerary generation; real-time translation and 24/7 AI customer service.",
+    "website": "https://www.trip.com"
+  },
+  {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "hq_country": "USA",
+    "category": "B2C",
+    "business_model": "Peer-to-peer platform for unique accommodations and experiences. Service fee on both guest and host side.",
+    "ai_strategy": "AI photo tour generation, smart pricing for hosts, AI-powered review summarization, and personalized home recommendations.",
+    "website": "https://www.airbnb.com"
+  },
+  {
+    "id": "agoda",
+    "name": "Agoda",
+    "hq_country": "Singapore",
+    "category": "B2C",
+    "business_model": "Asia-focused OTA owned by Booking Holdings. Specializes in hotel and vacation rental bookings with aggressive flash deals.",
+    "ai_strategy": "AI-based dynamic pricing alerts, personalized deal surfacing, and multilingual search using NLP.",
+    "website": "https://www.agoda.com"
+  },
+  {
+    "id": "makemytrip",
+    "name": "MakeMyTrip",
+    "hq_country": "India",
+    "category": "B2C",
+    "business_model": "India's largest OTA covering flights, hotels, trains, and buses. Revenue via commissions and margins.",
+    "ai_strategy": "AI chatbot for booking support, ML-based fare prediction, and personalized holiday packages.",
+    "website": "https://www.makemytrip.com"
+  },
+  {
+    "id": "kiwi",
+    "name": "Kiwi.com",
+    "hq_country": "Czech Republic",
+    "category": "B2C",
+    "business_model": "Flight-focused OTA specializing in multi-carrier combinations and virtual interlining to find cheapest routes.",
+    "ai_strategy": "Proprietary Nomad engine uses graph algorithms and ML to discover non-obvious connection routes across carriers.",
+    "website": "https://www.kiwi.com"
+  },
+  {
+    "id": "etraveli",
+    "name": "etraveli",
+    "hq_country": "Sweden",
+    "category": "B2C",
+    "business_model": "Flight-first OTA operating across Europe under multiple brands. Now a Booking Holdings company.",
+    "ai_strategy": "ML-based ancillary upsell optimization, smart seat and baggage recommendation at checkout.",
+    "website": "https://www.etraveli.com"
+  },
+  {
+    "id": "edreams",
+    "name": "eDreams ODIGEO",
+    "hq_country": "Spain",
+    "category": "B2C",
+    "business_model": "Europe's largest online travel group. Subscription model (Prime) on top of flight/hotel OTA to drive loyalty.",
+    "ai_strategy": "Prime AI engine predicts price drops for subscribers; ML personalization drives ancillary attachment rate.",
+    "website": "https://www.edreams.com"
+  }
+]

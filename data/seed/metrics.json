@@ -1,0 +1,110 @@
+[
+  {
+    "region_iso": "US",
+    "snapshot_month": "2025-01-01",
+    "avg_booking_value": 485,
+    "demand_index": 92,
+    "top_routes": ["NYC→LAX","LAX→LAS","NYC→MIA","CHI→LAX","NYC→SFO"],
+    "demographics": {"leisure": 58, "business": 30, "backpacker": 12},
+    "monthly_demand": [78,74,82,88,90,95,98,99,89,85,80,92]
+  },
+  {
+    "region_iso": "GB",
+    "snapshot_month": "2025-01-01",
+    "avg_booking_value": 520,
+    "demand_index": 85,
+    "top_routes": ["LHR→DXB","LHR→JFK","LHR→BCN","MAN→AGP","LHR→CDG"],
+    "demographics": {"leisure": 62, "business": 28, "backpacker": 10},
+    "monthly_demand": [65,68,72,80,85,88,95,96,85,78,70,68]
+  },
+  {
+    "region_iso": "DE",
+    "snapshot_month": "2025-01-01",
+    "avg_booking_value": 440,
+    "demand_index": 80,
+    "top_routes": ["FRA→PMI","MUC→DXB","FRA→JFK","BER→BCN","HAM→PMI"],
+    "demographics": {"leisure": 60, "business": 32, "backpacker": 8},
+    "monthly_demand": [55,58,65,75,82,88,92,94,82,75,62,58]
+  },
+  {
+    "region_iso": "CN",
+    "snapshot_month": "2025-01-01",
+    "avg_booking_value": 620,
+    "demand_index": 95,
+    "top_routes": ["PEK→SHA","SHA→CAN","PEK→CTU","SHA→XIY","CAN→SZX"],
+    "demographics": {"leisure": 55, "business": 35, "backpacker": 10},
+    "monthly_demand": [85,60,95,78,82,86,88,90,84,88,82,90]
+  },
+  {
+    "region_iso": "JP",
+    "snapshot_month": "2025-01-01",
+    "avg_booking_value": 560,
+    "demand_index": 88,
+    "top_routes": ["NRT→HND","KIX→NRT","NRT→ICN","HND→CTS","FUK→NRT"],
+    "demographics": {"leisure": 65, "business": 25, "backpacker": 10},
+    "monthly_demand": [72,70,85,90,88,82,78,82,88,80,75,78]
+  },
+  {
+    "region_iso": "IN",
+    "snapshot_month": "2025-01-01",
+    "avg_booking_value": 210,
+    "demand_index": 86,
+    "top_routes": ["DEL→BOM","DEL→BLR","BOM→GOI","DEL→CCU","BOM→HYD"],
+    "demographics": {"leisure": 52, "business": 38, "backpacker": 10},
+    "monthly_demand": [80,78,75,70,68,62,65,68,72,82,85,88]
+  },
+  {
+    "region_iso": "AU",
+    "snapshot_month": "2025-01-01",
+    "avg_booking_value": 490,
+    "demand_index": 76,
+    "top_routes": ["SYD→MEL","SYD→BKK","MEL→DPS","SYD→SIN","BNE→SYD"],
+    "demographics": {"leisure": 68, "business": 22, "backpacker": 10},
+    "monthly_demand": [90,88,82,72,65,60,58,60,68,75,82,88]
+  },
+  {
+    "region_iso": "AE",
+    "snapshot_month": "2025-01-01",
+    "avg_booking_value": 780,
+    "demand_index": 89,
+    "top_routes": ["DXB→LHR","DXB→BOM","DXB→KHI","DXB→MNL","DXB→CMB"],
+    "demographics": {"leisure": 45, "business": 45, "backpacker": 10},
+    "monthly_demand": [92,90,88,82,78,70,68,72,80,88,90,94]
+  },
+  {
+    "region_iso": "SG",
+    "snapshot_month": "2025-01-01",
+    "avg_booking_value": 650,
+    "demand_index": 84,
+    "top_routes": ["SIN→BKK","SIN→KUL","SIN→HKG","SIN→CGK","SIN→MNL"],
+    "demographics": {"leisure": 58, "business": 35, "backpacker": 7},
+    "monthly_demand": [82,80,84,86,85,82,80,82,84,86,84,86]
+  },
+  {
+    "region_iso": "FR",
+    "snapshot_month": "2025-01-01",
+    "avg_booking_value": 465,
+    "demand_index": 82,
+    "top_routes": ["CDG→JFK","CDG→DXB","CDG→BCN","CDG→LHR","LYS→PMI"],
+    "demographics": {"leisure": 65, "business": 25, "backpacker": 10},
+    "monthly_demand": [58,60,68,78,84,88,96,98,86,78,65,62]
+  },
+  {
+    "region_iso": "ES",
+    "snapshot_month": "2025-01-01",
+    "avg_booking_value": 380,
+    "demand_index": 87,
+    "top_routes": ["MAD→BCN","MAD→PMI","BCN→LHR","MAD→LHR","SVQ→BCN"],
+    "demographics": {"leisure": 70, "business": 20, "backpacker": 10},
+    "monthly_demand": [55,58,65,75,85,92,98,98,88,78,62,58]
+  },
+  {
+    "region_iso": "BR",
+    "snapshot_month": "2025-01-01",
+    "avg_booking_value": 280,
+    "demand_index": 72,
+    "top_routes": ["GRU→GIG","GRU→SSA","CGH→GIG","GRU→FOR","GIG→BSB"],
+    "demographics": {"leisure": 62, "business": 28, "backpacker": 10},
+    "monthly_demand": [82,80,78,72,68,65,62,65,68,74,78,84]
+  }
+]
