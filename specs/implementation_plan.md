@@ -109,7 +109,7 @@ erDiagram
 
 **Goal:** Runnable skeleton, CI, and seed data loaded.
 
-| Task | Output | Acceptance Criteria | Verification (検証方法) |
+| Task | Output | Acceptance Criteria | Verification |
 |---|---|---|---|
 | Create monorepo structure | Repo scaffold | `/frontend`, `/backend`, `/data` folders exist | `ls -R` directory check |
 | Configure Linting/TypeScript | Config files | Strict mode enabled, zero lint errors | `npm run lint` and `tsc --noEmit` |

@@ -3,6 +3,7 @@
 # My artifacts
 .agent
 .claude
+.github
 
 # dependencies
 /node_modules
@@ -31,6 +32,9 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.venv
+./backend/.env
+./frontend/.env
 
 # vercel
 .vercel
