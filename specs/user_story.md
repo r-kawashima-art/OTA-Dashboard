@@ -12,7 +12,7 @@
 
 ### FR-01: Interactive World Map
 
-- Display a zoomable, pannable world map as the primary interface.
+- Display a zoomable, pannable 2D world map as the primary interface (focused on regional connectivity).
 - Color-code regions based on a selectable KPI (e.g., market size, competitor density, demand index).
 - Show country/region boundaries with tooltips on hover.
 
@@ -84,4 +84,3 @@ On selecting a region, display a side panel with:
 - [ ] Comparison view renders side-by-side metrics for 2–3 selected regions.
 - [ ] CSV export produces a valid, formatted file for any selected region dataset.
 - [ ] Page load time is verified to be under 3 seconds in a performance test.
-- [ ] Access is blocked for unauthenticated users.

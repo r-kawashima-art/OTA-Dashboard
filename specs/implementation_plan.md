@@ -17,7 +17,7 @@ Build a world-map-based competitive intelligence dashboard for the OTA president
 | Layer | Choice | Rationale |
 |---|---|---|
 | Frontend Framework | React 19 + TypeScript | Type safety, ecosystem maturity |
-| Map Library | Mapbox GL JS | Best-in-class interactivity, clustering, custom layers |
+| Map Library | Leaflet (react-leaflet) | Open-source, free, and lightweight mapping |
 | Charts | Recharts | Lightweight, React-native, composable |
 | State Management | Zustand | Simple, minimal boilerplate for dashboard state |
 | Backend API | Python + FastAPI | Fast prototyping, async I/O, auto-generated docs |
@@ -31,7 +31,7 @@ Build a world-map-based competitive intelligence dashboard for the OTA president
 
 ```mermaid
 graph TD
-    subgraph Frontend [React + Mapbox GL]
+    subgraph Frontend [React + Leaflet]
         A[World Map View] --> B[Rival Markers Layer]
         A --> C[KPI Header]
         A --> D[Time-Period Filter]
@@ -55,7 +55,6 @@ graph TD
     end
 
     Frontend -->|REST / JSON| Backend
-    Auth0 -->|JWT| Frontend
 ```
 
 ---
@@ -129,8 +128,8 @@ erDiagram
 
 | Task | Output | Acceptance | Verification |
 |---|---|---|---|
-| Mapbox GL Integration | Map renders | Map visible at 1080p | Manual visual check |
-| Zoom / pan controls | Controls | Zoom 1–10 works smoothly | Manual interaction trace |
+| Leaflet Integration | Map renders | Map visible with OSM tiles | Manual visual check |
+| Zoom / pan controls | Controls | Zoom 2–10 works smoothly | Manual interaction trace |
 | Fetch /api/regions | Boundaries | All 195 borders drawn | Browser console: GeoJSON check |
 | KPI Choropleth | Color layer | Dropdown switches KPI, colors update | Visual vs expected palette |
 | Hover Tooltips | Tooltip | Appears within 200ms | Performance monitor (DevTools) |
