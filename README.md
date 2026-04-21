@@ -2,6 +2,19 @@
 
 A world-map-based dashboard for monitoring rival Online Travel Agencies (OTAs) and regional travel market characteristics.
 
+## Status
+
+| Phase | Feature | Status |
+| --- | --- | --- |
+| 0 | Monorepo scaffold, DB migrations, seed data, CI | **Complete** |
+| 1 | Interactive world map, KPI choropleth, hover tooltips (FR-01) | **Complete** |
+| 2 | Rival company marker overlay (FR-02) | Not started |
+| 3 | Regional characteristics panel (FR-03) | Not started |
+| 4 | KPI header + comparison view (FR-04, FR-05) | Not started |
+| 5 | Time-period filter + CSV/PDF export (FR-06) | Not started |
+
+See [docs/walkthrough.md](docs/walkthrough.md) for per-phase progress notes.
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -111,7 +124,7 @@ cp .env.example .env              # edit if your DB credentials differ
 # Apply database migrations
 alembic upgrade head
 
-# Seed initial data (9 rivals, 30 countries)
+# Seed initial data (9 rivals, 30 countries, 30 KPI metric rows)
 python ../data/seeds/seed.py
 
 # Start the API server
@@ -142,27 +155,70 @@ Open `http://localhost:3000` in your browser.
 
 ```text
 OTA-Worldmap/
-├── frontend/          # React 19 + TypeScript (Vite)
+├── frontend/                          # React 19 + TypeScript (Vite)
+│   ├── index.html                     # Vite entry document
 │   ├── src/
+│   │   ├── main.tsx                   # React root + global CSS import
+│   │   ├── App.tsx                    # Layout shell (header + map)
+│   │   ├── index.css                  # App styles + Leaflet CSS import
+│   │   ├── types.ts                   # KPI + GeoJSON type definitions
+│   │   ├── api/
+│   │   │   └── regions.ts             # fetch wrapper for /api/regions
+│   │   ├── components/
+│   │   │   ├── WorldMap.tsx           # Leaflet map + choropleth layer
+│   │   │   └── KpiSelector.tsx        # KPI dropdown
+│   │   ├── stores/
+│   │   │   └── kpiStore.ts            # Zustand store (selected KPI)
+│   │   └── utils/
+│   │       ├── colorScale.ts          # Choropleth color interpolation
+│   │       └── colorScale.test.ts     # Vitest unit tests
+│   ├── vite.config.ts
 │   └── package.json
-├── backend/           # FastAPI + SQLAlchemy
+├── backend/                           # FastAPI + SQLAlchemy (async)
 │   ├── app/
-│   │   ├── main.py
-│   │   ├── config.py
-│   │   ├── database.py
+│   │   ├── main.py                    # FastAPI app + router registration
+│   │   ├── config.py                  # Pydantic settings
+│   │   ├── database.py                # Async engine + session factory
+│   │   ├── base.py                    # SQLAlchemy declarative base
 │   │   ├── models/
+│   │   │   ├── region.py              # Region, RegionMetrics
+│   │   │   └── rival.py               # Rival, RivalRegionSnapshot
 │   │   └── routers/
-│   ├── migrations/    # Alembic migration files
+│   │       └── regions.py             # GET /api/regions (GeoJSON + KPIs)
+│   ├── migrations/                    # Alembic migration files
 │   ├── alembic.ini
 │   └── requirements.txt
 ├── data/
-│   └── seeds/seed.py  # Initial rival + region data
+│   ├── geo/
+│   │   └── countries.simplified.geo.json   # Boundaries for 233 countries
+│   └── seeds/
+│       └── seed.py                    # Rivals, regions, region_metrics
 ├── docs/
-│   └── walkthrough.md # Implementation progress log
+│   └── walkthrough.md                 # Per-phase implementation log
 ├── specs/
 │   ├── user_story.md
 │   └── implementation_plan.md
 └── docker-compose.yml
+```
+
+---
+
+## API Endpoints
+
+| Method | Path | Purpose | Response |
+| --- | --- | --- | --- |
+| `GET` | `/healthz` | Liveness probe | `{"status": "ok"}` |
+| `GET` | `/api/regions` | Country boundaries merged with the latest KPI snapshot per region | GeoJSON `FeatureCollection` — 233 features, `properties` include `iso_code`, `name`, `continent`, `demand_index`, `avg_booking_value`, `snapshot_month` |
+
+Interactive OpenAPI docs are available at `http://localhost:8000/docs` when the backend is running.
+
+Smoke-check from the terminal:
+
+```bash
+curl -s http://localhost:8000/healthz
+curl -s http://localhost:8000/api/regions | jq '.features | length'   # 233
+curl -s http://localhost:8000/api/regions \
+  | jq '[.features[] | select(.properties.demand_index != null)] | length'   # 30
 ```
 
 ---
@@ -246,3 +302,18 @@ This can happen if the execution bit is missing from the binaries in `node_modul
 ```bash
 chmod +x frontend/node_modules/.bin/*
 ```
+
+### World map is blank at `http://localhost:3000`
+
+The page renders the header but the map area is empty or white. This is almost always a stale-client problem after scaffolding changes — not a code bug. Resolve in this order:
+
+1. Stop both dev servers and clear the Vite module cache, then restart cleanly:
+
+   ```bash
+   kill $(lsof -t -i:3000 -i:8000) 2>/dev/null
+   rm -rf frontend/node_modules/.vite
+   ```
+
+2. Confirm the backend is serving KPIs — `/api/regions` must return 233 features with 30 of them carrying a non-null `demand_index` (see the smoke-check under [API Endpoints](#api-endpoints)). If the count is 0, re-run the seed script.
+3. Hard-reload the browser (`⌘⇧R` on macOS, `Ctrl+Shift+R` on Windows/Linux), or open the page in a private window to bypass cached assets.
+4. If the map still doesn't appear, open DevTools → Console. A `Map container is already initialized` error points to a `react-leaflet@4` + React 19 StrictMode double-mount; a `Failed to fetch /api/regions` message means the backend isn't actually reachable from Vite's proxy.
