@@ -1,10 +1,11 @@
 """
-Seed script: loads 9 rival OTAs and 30 country regions into the database.
+Seed script: loads 9 rival OTAs, 30 country regions, and KPI metrics into the database.
 Run from /backend: python ../data/seeds/seed.py
 """
 import os
 import sys
 import uuid
+from datetime import date
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "backend"))
 
@@ -133,6 +134,42 @@ COUNTRIES = [
     ("GR", "Greece", "Europe"),
 ]
 
+# KPI snapshot for the latest month. Demand index is a 0-100 score
+# (travel intent proxy); avg booking value is USD per reservation.
+SNAPSHOT_MONTH = date(2026, 4, 1)
+REGION_METRICS = [
+    ("US", 92, 412.50),
+    ("GB", 78, 298.10),
+    ("DE", 71, 275.40),
+    ("FR", 83, 320.75),
+    ("JP", 81, 355.90),
+    ("CN", 86, 240.60),
+    ("IN", 74, 165.20),
+    ("AU", 68, 390.00),
+    ("BR", 62, 185.30),
+    ("CA", 70, 342.80),
+    ("MX", 65, 210.45),
+    ("ES", 79, 268.90),
+    ("IT", 77, 289.50),
+    ("NL", 72, 305.60),
+    ("SE", 64, 330.25),
+    ("CZ", 58, 198.70),
+    ("SG", 75, 405.10),
+    ("TH", 82, 172.30),
+    ("ID", 69, 148.90),
+    ("KR", 73, 285.70),
+    ("AE", 80, 450.20),
+    ("SA", 55, 295.80),
+    ("ZA", 52, 215.40),
+    ("NG", 48, 158.90),
+    ("EG", 60, 188.20),
+    ("AR", 57, 175.60),
+    ("TR", 66, 205.30),
+    ("PL", 61, 190.80),
+    ("PT", 72, 245.50),
+    ("GR", 76, 260.40),
+]
+
 
 def seed():
     conn = psycopg2.connect(DB_URL)
@@ -161,17 +198,49 @@ def seed():
         ],
     )
 
+    # Region metrics (idempotent: replace the snapshot for the seeded month)
+    cur.execute(
+        "DELETE FROM region_metrics WHERE snapshot_month = %s",
+        (SNAPSHOT_MONTH,),
+    )
+    execute_values(
+        cur,
+        """
+        INSERT INTO region_metrics
+            (id, region_iso, snapshot_month, avg_booking_value, demand_index, top_routes, demographics)
+        VALUES %s
+        """,
+        [
+            (
+                str(uuid.uuid4()),
+                iso,
+                SNAPSHOT_MONTH,
+                avg_booking_value,
+                demand_index,
+                None,
+                None,
+            )
+            for iso, demand_index, avg_booking_value in REGION_METRICS
+        ],
+    )
+
     conn.commit()
     cur.execute("SELECT COUNT(*) FROM rivals;")
     rival_count = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM regions;")
     region_count = cur.fetchone()[0]
+    cur.execute(
+        "SELECT COUNT(*) FROM region_metrics WHERE snapshot_month = %s",
+        (SNAPSHOT_MONTH,),
+    )
+    metrics_count = cur.fetchone()[0]
     cur.close()
     conn.close()
 
-    print(f"Seeded {rival_count} rivals and {region_count} regions.")
+    print(f"Seeded {rival_count} rivals, {region_count} regions, {metrics_count} region_metrics.")
     assert rival_count == 9, f"Expected 9 rivals, got {rival_count}"
     assert region_count == 30, f"Expected 30 regions, got {region_count}"
+    assert metrics_count == 30, f"Expected 30 region_metrics, got {metrics_count}"
     print("PASS: seed counts verified.")
 
 

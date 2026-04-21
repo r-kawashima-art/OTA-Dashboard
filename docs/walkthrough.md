@@ -94,3 +94,111 @@ With Phase 0 complete, use the following commands to start the development envir
 - Implementation of the Leaflet-based world map.
 - Connection to `/api/regions` for GeoJSON boundary rendering.
 - Creation of the KPI Choropleth layer.
+
+---
+
+## 📅 Current Update: 2026-04-21
+
+### 🚀 Milestone: Phase-1 — Interactive World Map Core [COMPLETED]
+
+FR-01 is now live. The dashboard renders a zoomable, pannable world map with a KPI-driven choropleth layer, a KPI dropdown for switching metrics, and hover tooltips for every country boundary.
+
+---
+
+### ✅ Accomplishments
+
+#### Task-1.1: Country Boundaries Dataset
+
+- Sourced **Natural Earth admin-0** boundaries (258 countries) and simplified to **0.1° coordinate precision**, reducing the payload from 14 MB → 2.1 MB with no perceptible visual loss at world-scale zoom.
+- Patched known Natural Earth ISO quirks (France, Norway, Kosovo → `FR`/`NO`/`XK`); dropped pseudo-territories (Guantanamo Bay, Bir Tawil, etc.) that have no ISO-3166-1 alpha-2 code.
+- Final dataset: **233 countries** stored at [data/geo/countries.simplified.geo.json](../data/geo/countries.simplified.geo.json).
+
+#### Task-1.2: KPI Snapshot Seeding
+
+- Extended [data/seeds/seed.py](../data/seeds/seed.py) with an idempotent `region_metrics` seeder for snapshot `2026-04-01`, covering **30 regions** with `demand_index` (0–100 travel-intent score) and `avg_booking_value` (USD).
+
+#### Task-1.3: Backend `/api/regions` Endpoint
+
+- Implemented [backend/app/routers/regions.py](../backend/app/routers/regions.py) — returns a GeoJSON `FeatureCollection` that **merges boundary geometries with the latest KPI snapshot per region** in a single round-trip.
+- Uses PostgreSQL `DISTINCT ON` to select each region's newest `snapshot_month` efficiently (future-proof for monthly ingestion).
+- GeoJSON file is loaded **once per process** via `functools.lru_cache`.
+
+#### Task-1.4: Frontend World Map
+
+- **[`WorldMap.tsx`](../frontend/src/components/WorldMap.tsx)** — `react-leaflet` `MapContainer` with OSM tiles, zoom bounds **2–10**, world-copy-jump enabled.
+- **[`colorScale.ts`](../frontend/src/utils/colorScale.ts)** — sequential sky-100 → sky-600 choropleth with clamping, null-value fallback, and degenerate-range handling.
+- **[`KpiSelector.tsx`](../frontend/src/components/KpiSelector.tsx)** + **[`kpiStore.ts`](../frontend/src/stores/kpiStore.ts)** — Zustand-backed dropdown that switches between `demand_index` and `avg_booking_value`; the GeoJSON layer re-keys on change so styles and tooltips refresh atomically.
+- **Hover tooltips** — sticky Leaflet tooltips with country name, continent, and formatted KPI value; mouseover brings the feature to front and thickens the stroke.
+
+---
+
+### 🧪 Verification Results
+
+#### 📋 Backend API
+
+```text
+GET /api/regions → 200 OK
+features: 233
+features with demand_index: 30
+FR sample: {iso_code:"FR", name:"France", continent:"Europe",
+            demand_index:83, avg_booking_value:320.75,
+            snapshot_month:"2026-04-01"}
+```
+
+#### 🧮 Frontend Unit Tests (KPI Scale)
+
+```text
+✓ src/utils/colorScale.test.ts (17 tests) 2ms
+Test Files  1 passed (1)
+     Tests  17 passed (17)
+```
+
+#### 🔍 Lint / Type-Check / Build
+
+```text
+npm run lint  → 0 warnings, 0 errors
+tsc --noEmit  → clean
+vite build    → 82 modules transformed
+                dist/assets/index.js 353 KB (gzip 107 KB)
+```
+
+---
+
+### 🏗️ Technical Decisions & Troubleshooting
+
+> [!IMPORTANT]
+> **Phase-0 Configuration Fixes Required** — several Phase-0 configuration gaps surfaced only when the first real code was added:
+> - `index.html` was in `public/` — Vite requires it at the project root. **Moved to `frontend/index.html`**.
+> - `greenlet` was missing from the live venv despite being pinned in `requirements.txt` — **reinstalled** to unblock SQLAlchemy async sessions.
+> - `vite.config.ts` used `defineConfig` from `vite` (no `test` field) — **added `/// <reference types="vitest" />`**.
+> - ESLint flat config had no browser globals — `fetch`/`document` were flagged as undefined. **Imported `globals.browser`** and ignored `dist/`, `node_modules/`, and the Vite config file.
+> - **React-Leaflet vs. React 19 StrictMode**: The world map rendered blank at startup because React 18/19 `StrictMode` triggers a double-mount in development. `react-leaflet@4` attempts to initialize the map twice, but Leaflet throws an error if a container is already initialized. **Decision**: Removed `<StrictMode>` from `frontend/src/main.tsx` to ensure stable map initialization.
+> - **NPM Permission Denied**: Executable bits were missing on binaries in `node_modules/.bin/` (e.g., `vite`), preventing `npm run dev` from starting. **Applied `chmod +x`** to the entire `.bin` directory to restore functionality.
+
+> [!TIP]
+> **Test Environment**
+> The scaffold referenced `environment: 'jsdom'` but `jsdom` was never installed. The Phase-1 KPI-scale tests are pure-math, so we switched the environment to **`node`** — zero extra dependencies. When DOM-dependent tests arrive in Phase 2 (Playwright E2E), we'll revisit.
+
+> [!NOTE]
+> **Boundary vs. Metric Coverage**
+> `/api/regions` intentionally returns **all 233 boundaries**, not just the 30 seeded ones. Countries without metrics render in neutral gray (`#e5e7eb`) with reduced opacity, so the base map is always complete and the choropleth subset is visually distinguishable.
+
+---
+
+### 🛠️ Active Development Workflow
+
+| Service | Command | Status |
+| --- | --- | --- |
+| **Database** | `docker compose up -d db` | Running |
+| **Backend API** | `cd backend && uvicorn app.main:app --reload` | Serves `/api/regions` |
+| **Frontend UI** | `cd frontend && npm run dev` | Renders world map at `:3000` |
+| **Tests** | `cd frontend && npm test` | 17/17 passing |
+
+---
+
+**Next Phase**: **Phase 2 — Rival Company Overlay**
+
+- `/api/rivals` endpoint with category filters.
+- 9 rival markers with clustering at zoom < 5.
+- Rival summary card on click (name, HQ, market share, AI strategy).
+- Playwright E2E test coverage.

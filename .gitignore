@@ -4,6 +4,7 @@
 .agent
 .claude
 .github
+./backend/.venv
 
 # dependencies
 /node_modules
