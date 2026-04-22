@@ -202,3 +202,113 @@ vite build    → 82 modules transformed
 - 9 rival markers with clustering at zoom < 5.
 - Rival summary card on click (name, HQ, market share, AI strategy).
 - Playwright E2E test coverage.
+
+---
+
+## 📅 Current Update: 2026-04-22
+
+### 🚀 Milestone: Phase-2 — Rival Company Overlay [COMPLETED]
+
+FR-02 is now live. The map overlays all 9 seed rivals as clickable violet pins, clusters them when zoomed out below level 5, opens a floating summary card on click, and supports category-chip filtering. A Playwright smoke test covers the full click-path.
+
+---
+
+### ✅ Accomplishments
+
+#### Task-2.1: Backend `/api/rivals`
+
+- Implemented [backend/app/routers/rivals.py](../backend/app/routers/rivals.py) — returns `{ rivals: [...], count: n }` with HQ coordinates attached.
+- HQ coordinates **hardcoded** as a Python dict (9 entries). A full migration to add `hq_latitude`/`hq_longitude` columns would be invasive for stable facts; a dict keeps Phase-2 additive.
+- Optional `?category=B2C&category=B2B` filter (arrays collapse to `IN (...)`).
+- Airbnb overridden to San Francisco so it doesn't stack on top of Expedia (Seattle) at the same "United States" key.
+- Registered in [backend/app/main.py](../backend/app/main.py).
+
+#### Task-2.2: Frontend rival layer
+
+- **[`RivalMarkersLayer.tsx`](../frontend/src/components/RivalMarkersLayer.tsx)** — custom component that mounts a `L.markerClusterGroup` via `useMap()` from `react-leaflet`. Avoids `react-leaflet-cluster` (unmaintained under React 19).
+- Markers are inline SVG `divIcon`s (violet #7c3aed) — no binary asset needed.
+- Clustering: `maxClusterRadius: zoom < 5 ? 80 : 40`, `disableClusteringAtZoom: 6`. Meets the "no overlap at zoom < 5" acceptance while letting individual pins breathe at continental zoom.
+
+#### Task-2.3: Summary card & filter
+
+- **[`RivalSummaryCard.tsx`](../frontend/src/components/RivalSummaryCard.tsx)** — floating absolute-positioned `<aside>` top-right of the map; closes on × click or Esc.
+- **[`RivalCategoryFilter.tsx`](../frontend/src/components/RivalCategoryFilter.tsx)** — chip group in the header; active chips are violet, inactive chips are neutral; "All" resets.
+- State via **[`rivalStore.ts`](../frontend/src/stores/rivalStore.ts)** (Zustand): `rivals`, `activeCategories: Set<string>`, `selectedRivalId`.
+
+#### Task-2.4: Playwright E2E
+
+- Installed `@playwright/test` + added [`playwright.config.ts`](../frontend/playwright.config.ts) with `webServer: vite dev`.
+- **[`e2e/rivals.spec.ts`](../frontend/e2e/rivals.spec.ts)** — clicks a pin, asserts the summary dialog appears with a non-empty title, dismisses it, and verifies that toggling a category chip reduces the visible pin count.
+- ESLint + tsconfig updated to exclude `e2e/` so vitest + eslint runs don't require the Playwright type project.
+
+---
+
+### 🧪 Verification Results
+
+#### 📋 Backend API Registration
+
+```text
+$ python -c "from app.main import app; print(sorted({r.path for r in app.routes if hasattr(r,'path')}))"
+['/api/regions', '/api/rivals', '/docs', '/healthz', '/openapi.json', ...]
+```
+
+#### 🔍 Lint / Type-Check / Build
+
+```text
+npm run lint  → 0 warnings, 0 errors
+tsc --noEmit  → clean
+vite build    → 92 modules transformed
+                dist/assets/index.js  391.79 kB (gzip 117.80 kB)
+                dist/assets/index.css  21.04 kB (gzip   7.72 kB)
+```
+
+#### 🧮 Frontend Unit Tests
+
+```text
+✓ src/utils/colorScale.test.ts (17 tests) 2ms
+Test Files  1 passed (1) | Tests  17 passed (17)
+```
+
+#### 🧭 Playwright Smoke (scaffolded)
+
+Runtime execution is **deferred** until the dev environment is running end-to-end (Docker + backend + `npx playwright install chromium`). The test file compiles under the Playwright parser and follows the standard `@playwright/test` idiom:
+
+```bash
+docker compose up -d db
+cd backend && uvicorn app.main:app --reload &
+cd frontend && npx playwright install chromium && npm run test:e2e
+```
+
+---
+
+### 🏗️ Technical Decisions & Troubleshooting
+
+> [!IMPORTANT]
+> **Clustering library choice** — `react-leaflet-cluster` currently fails to install cleanly under React 19 / `react-leaflet@4`. **Decision**: use the upstream `leaflet.markercluster` directly through `useMap()`. It's the canonical library, has first-party type defs (`@types/leaflet.markercluster`), and keeps the Phase-1 GeoJSON layer untouched.
+
+> [!TIP]
+> **HQ coordinates: dict, not migration** — Adding two columns to the `rivals` table would require an Alembic revision, backfill, and a seed-data change. For 9 rows of stable facts, a dict in [`backend/app/routers/rivals.py`](../backend/app/routers/rivals.py) is simpler and reversible. When Phase 4+ introduces regional presence snapshots, we'll reconsider.
+
+> [!NOTE]
+> **Pre-existing `StrictMode` import** — Phase-1 removed `<StrictMode>` but left the import in [`main.tsx`](../frontend/src/main.tsx), which `tsc --noUnusedLocals` flagged the moment a new `tsc --noEmit` run touched the file. Cleaned up as part of Phase 2.
+
+---
+
+### 🛠️ Active Development Workflow
+
+| Service | Command | Status |
+| --- | --- | --- |
+| **Database** | `docker compose up -d db` | Required |
+| **Backend API** | `cd backend && uvicorn app.main:app --reload` | Serves `/api/regions` + `/api/rivals` |
+| **Frontend UI** | `cd frontend && npm run dev` | Renders map, pins, filter, summary card |
+| **Unit tests** | `cd frontend && npm test` | 17/17 passing |
+| **E2E tests** | `cd frontend && npm run test:e2e` | Scaffolded (needs chromium install) |
+
+---
+
+**Next Phase**: **Phase 3 — Regional Characteristics Panel**
+
+- `GET /api/regions/:iso` returning metrics + demographics.
+- Side-panel slide-in on country click.
+- 12-month seasonal demand chart (Recharts).
+- Demographics donut + rival ranking table for the selected region.

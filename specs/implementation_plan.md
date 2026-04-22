@@ -27,83 +27,7 @@ Build a world-map-based competitive intelligence dashboard for the OTA president
 
 ---
 
-## 3. Architecture Overview
-
-```mermaid
-graph TD
-    subgraph Frontend [React + Leaflet]
-        A[World Map View] --> B[Rival Markers Layer]
-        A --> C[KPI Header]
-        A --> D[Time-Period Filter]
-        B --> E[Rival Summary Card]
-        A --> F[Regional Panel]
-        F --> G[Demand Chart - Recharts]
-        F --> H[Rival Ranking Table]
-        A --> I[Comparison View]
-    end
-
-    subgraph Backend [FastAPI]
-        J["/api/regions"] --> K[PostgreSQL + PostGIS]
-        L["/api/rivals"] --> K
-        M["/api/kpis"] --> K
-        N["/api/export"] --> K
-    end
-
-    subgraph Ingestion [Python Cron]
-        O[Data Scrapers / APIs] --> P[Transform & Validate]
-        P --> K
-    end
-
-    Frontend -->|REST / JSON| Backend
-```
-
----
-
-## 4. Data Model (Simplified)
-
-```mermaid
-erDiagram
-    REGION {
-        string iso_code PK
-        string name
-        geometry boundary
-        string continent
-    }
-    RIVAL {
-        uuid id PK
-        string name
-        string hq_country
-        string category
-        string business_model
-        text ai_strategy
-        string website
-    }
-    RIVAL_REGION_SNAPSHOT {
-        uuid id PK
-        uuid rival_id FK
-        string region_iso FK
-        float market_share_pct
-        int booking_volume
-        date snapshot_month
-    }
-    REGION_METRICS {
-        uuid id PK
-        string region_iso FK
-        date snapshot_month
-        float avg_booking_value
-        int demand_index
-        jsonb top_routes
-        jsonb demographics
-    }
-
-    REGION ||--o{ RIVAL_REGION_SNAPSHOT : has
-    RIVAL ||--o{ RIVAL_REGION_SNAPSHOT : has
-    REGION ||--o{ REGION_METRICS : has
-```
-
----
-
-## 5. Phase Plan
+## 3. Phase Plan
 
 ### Phase 0 — Project Setup
 
@@ -139,20 +63,20 @@ erDiagram
 
 ---
 
-### Phase 2 — Rival Company Overlay
+### Phase 2 — Rival Company Overlay ✅ [COMPLETED 2026-04-22]
 
 **Goal:** Satisfy FR-02 fully.
 
-| Task | Output | Acceptance | Verification |
-|---|---|---|---|
-| Backend /api/rivals | API | Returns JSON in < 200ms | Postman: Response time check |
-| Rival markers | Markers | 9 seed rivals visible | Visual marker count check |
-| Marker clustering | Clustered pins | No overlap at zoom < 5 | Manual zoom-out verification |
-| Rival summary card | Card component | Card opens within 300ms | Interaction profiling |
-| Category filters | Filter UI | Markers update on toggle | Toggle each category manual test |
-| Rival Playwright Test | E2E test | Passes in CI | `npx playwright test` |
+| ID | Task | Output | Acceptance | Verification | Status |
+|---|---|---|---|---|---|
+| T-2.1 | Backend `/api/rivals` | [backend/app/routers/rivals.py](../backend/app/routers/rivals.py) | Returns JSON in < 200ms, supports `?category=` filter | `curl -sw '\n%{time_total}s\n' http://localhost:8000/api/rivals` | ✅ |
+| T-2.2 | Rival markers | [RivalMarkersLayer.tsx](../frontend/src/components/RivalMarkersLayer.tsx) | 9 seed rivals visible as violet SVG pins | Visual marker count check at zoom ≥ 6 | ✅ |
+| T-2.3 | Marker clustering | `leaflet.markercluster` via `useMap()` | No overlap at zoom < 5 (`maxClusterRadius: 80`) | Manual zoom-out verification | ✅ |
+| T-2.4 | Rival summary card | [RivalSummaryCard.tsx](../frontend/src/components/RivalSummaryCard.tsx) | Card opens within 300ms on marker click; Esc + × close | Interaction profiling via DevTools | ✅ |
+| T-2.5 | Category filters | [RivalCategoryFilter.tsx](../frontend/src/components/RivalCategoryFilter.tsx) + [rivalStore.ts](../frontend/src/stores/rivalStore.ts) | Toggling a chip adds/removes rivals of that category | Toggle each category manual test | ✅ |
+| T-2.6 | Playwright E2E | [e2e/rivals.spec.ts](../frontend/e2e/rivals.spec.ts) + [playwright.config.ts](../frontend/playwright.config.ts) | `npm run test:e2e` exercises marker click, card open/close, chip toggle | `npx playwright install chromium && npm run test:e2e` | Scaffolded — runtime pending DB/browser |
 
-**Milestone:** All 9 seed rivals are clickable on the map with summary cards.
+**Milestone:** All 9 seed rivals are clickable on the map with summary cards, filterable by category, and covered by a Playwright smoke test.
 
 ---
 

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { GeoJSON, MapContainer, TileLayer } from 'react-leaflet'
 
 import { fetchRegions } from '../api/regions'
+import { RivalMarkersLayer } from './RivalMarkersLayer'
 import { useKpiStore } from '../stores/kpiStore'
 import {
   KPI_DEFINITIONS,
@@ -125,6 +126,7 @@ export function WorldMap() {
             onEachFeature={onEachFeature as L.GeoJSONOptions['onEachFeature']}
           />
         )}
+        <RivalMarkersLayer />
       </MapContainer>
     </div>
   )

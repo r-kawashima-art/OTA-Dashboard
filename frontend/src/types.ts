@@ -21,6 +21,23 @@ export interface RegionProperties {
 export type RegionGeometry = Polygon | MultiPolygon
 export type RegionFeatureCollection = FeatureCollection<RegionGeometry, RegionProperties>
 
+export interface Rival {
+  id: string
+  name: string
+  hq_country: string | null
+  category: string | null
+  business_model: string | null
+  ai_strategy: string | null
+  website: string | null
+  lat: number
+  lng: number
+}
+
+export interface RivalsResponse {
+  rivals: Rival[]
+  count: number
+}
+
 export const KPI_DEFINITIONS: Record<KpiKey, KpiDefinition> = {
   demand_index: {
     key: 'demand_index',
