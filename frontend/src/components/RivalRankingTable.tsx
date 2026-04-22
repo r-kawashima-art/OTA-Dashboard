@@ -1,0 +1,35 @@
+import type { RivalRankingEntry } from '../types'
+
+interface Props {
+  ranking: RivalRankingEntry[]
+}
+
+export function RivalRankingTable({ ranking }: Props) {
+  if (ranking.length === 0) {
+    return <p className="region-panel__empty">No rival snapshots seeded for this region.</p>
+  }
+
+  return (
+    <table className="rival-ranking">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Rival</th>
+          <th scope="col" className="rival-ranking__num">Share</th>
+        </tr>
+      </thead>
+      <tbody>
+        {ranking.map((r, idx) => (
+          <tr key={r.rival_id}>
+            <td className="rival-ranking__rank">{idx + 1}</td>
+            <td>
+              <div className="rival-ranking__name">{r.name}</div>
+              {r.category && <div className="rival-ranking__meta">{r.category}</div>}
+            </td>
+            <td className="rival-ranking__num">{r.market_share_pct.toFixed(1)}%</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}

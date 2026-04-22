@@ -38,19 +38,35 @@ OTA-Worldmap/
 │   ├── index.html                     # Vite entry document
 │   ├── src/
 │   │   ├── main.tsx                   # React root + global CSS import
-│   │   ├── App.tsx                    # Layout shell (header + map)
-│   │   ├── index.css                  # App styles + Leaflet CSS import
-│   │   ├── types.ts                   # KPI + GeoJSON type definitions
+│   │   ├── App.tsx                    # Layout shell (header + map + panels)
+│   │   ├── index.css                  # App styles + Leaflet/MarkerCluster CSS
+│   │   ├── types.ts                   # KPI, Rival, RegionDetail types
 │   │   ├── api/
-│   │   │   └── regions.ts             # fetch wrapper for /api/regions
+│   │   │   ├── regions.ts             # fetch wrapper for /api/regions
+│   │   │   ├── regionDetail.ts        # fetch wrapper for /api/regions/{iso}
+│   │   │   └── rivals.ts              # fetch wrapper for /api/rivals
 │   │   ├── components/
 │   │   │   ├── WorldMap.tsx           # Leaflet map + choropleth layer
-│   │   │   └── KpiSelector.tsx        # KPI dropdown
+│   │   │   ├── KpiSelector.tsx        # KPI dropdown
+│   │   │   ├── RivalMarkersLayer.tsx  # leaflet.markercluster rival pins
+│   │   │   ├── RivalSummaryCard.tsx   # Floating card on marker click
+│   │   │   ├── RivalCategoryFilter.tsx # Category chip filter
+│   │   │   ├── RegionPanel.tsx        # Phase-3 side panel host
+│   │   │   ├── DemandChart.tsx        # 12-month Recharts BarChart
+│   │   │   ├── DemographicsDonut.tsx  # Recharts PieChart donut
+│   │   │   └── RivalRankingTable.tsx  # Market-share ranking per region
 │   │   ├── stores/
-│   │   │   └── kpiStore.ts            # Zustand store (selected KPI)
+│   │   │   ├── kpiStore.ts            # Zustand (selected KPI)
+│   │   │   ├── rivalStore.ts          # Zustand (rivals, categories, selection)
+│   │   │   └── regionDetailStore.ts   # Zustand (region-panel state)
 │   │   └── utils/
 │   │       ├── colorScale.ts          # Choropleth color interpolation
-│   │       └── colorScale.test.ts     # Vitest unit tests
+│   │       ├── colorScale.test.ts     # Vitest unit tests
+│   │       ├── demographics.ts        # Donut share normalizer
+│   │       └── demographics.test.ts   # Vitest unit tests
+│   ├── e2e/
+│   │   └── rivals.spec.ts             # Playwright smoke test (FR-02)
+│   ├── playwright.config.ts
 │   ├── vite.config.ts
 │   └── package.json
 ├── backend/                           # FastAPI + SQLAlchemy (async)
@@ -63,7 +79,8 @@ OTA-Worldmap/
 │   │   │   ├── region.py              # Region, RegionMetrics
 │   │   │   └── rival.py               # Rival, RivalRegionSnapshot
 │   │   └── routers/
-│   │       └── regions.py             # GET /api/regions (GeoJSON + KPIs)
+│   │       ├── regions.py             # /api/regions + /api/regions/{iso}
+│   │       └── rivals.py              # /api/rivals (roster + HQ coords)
 │   ├── migrations/                    # Alembic migration files
 │   ├── alembic.ini
 │   └── requirements.txt

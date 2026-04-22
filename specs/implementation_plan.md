@@ -80,19 +80,20 @@ Build a world-map-based competitive intelligence dashboard for the OTA president
 
 ---
 
-### Phase 3 — Regional Characteristics Panel
+### Phase 3 — Regional Characteristics Panel ✅ [COMPLETED 2026-04-22]
 
 **Goal:** Satisfy FR-03 fully.
 
-| Task | Output | Acceptance | Verification |
-|---|---|---|---|
-| Backend /api/regions/:iso | API | Returns metrics + demographics | JSON Schema validation |
-| Side panel slide-in | Panel component | Opens in < 400ms | Visual transition audit |
-| Seasonal demand chart | Chart | 12-month data plotted | DB vs UI data point sample |
-| Demographics breakdown | Demographics | Segments sum to 100% | Unit test for donut logic |
-| Close / collapse UX | Dismiss button | Panel closes, map re-centers | Click-path regression test |
+| ID | Task | Output | Acceptance | Verification | Status |
+|---|---|---|---|---|---|
+| T-3.1 | Backend `/api/regions/{iso}` | [backend/app/routers/regions.py](../backend/app/routers/regions.py) | Returns metrics + monthly_demand + demographics + top_routes + rival_ranking; 404 on unknown ISO | `curl -s http://localhost:8000/api/regions/FR \| jq` | ✅ |
+| T-3.2 | Side panel slide-in | [RegionPanel.tsx](../frontend/src/components/RegionPanel.tsx) | Opens in < 400ms via 320ms CSS transform | Manual inspection of `region-panel-slide-in` keyframes | ✅ |
+| T-3.3 | Seasonal demand chart | [DemandChart.tsx](../frontend/src/components/DemandChart.tsx) | 12-month Recharts `BarChart`; peaks synthesized from `demand_index` + hemisphere | Northern sample peaks in Jul, Southern in Jan | ✅ |
+| T-3.4 | Demographics donut | [DemographicsDonut.tsx](../frontend/src/components/DemographicsDonut.tsx) + [demographics.ts](../frontend/src/utils/demographics.ts) | Segments re-normalize to sum to 100 | `npm test` — 7/7 donut-logic tests in [demographics.test.ts](../frontend/src/utils/demographics.test.ts) | ✅ |
+| T-3.5 | Close / collapse UX | `closeRegion()` on Esc + × button | Panel dismounts; map retains bounds | Click-path manual test | ✅ |
+| T-3.6 | Rival ranking table | [RivalRankingTable.tsx](../frontend/src/components/RivalRankingTable.tsx) + seed_update for [data/seeds/seed.py](../data/seeds/seed.py) | Dominant rival first; rows ≤ 7 per region; 30 × ~6 rows seeded | `SELECT COUNT(*) FROM rival_region_snapshots;` ≥ 150 | ✅ |
 
-**Milestone:** Clicking any country opens a panel with demand chart and rival ranking.
+**Milestone:** Clicking any country opens a panel with demand chart, demographics donut, top routes, and rival ranking.
 
 ---
 

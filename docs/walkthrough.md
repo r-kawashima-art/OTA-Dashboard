@@ -312,3 +312,143 @@ cd frontend && npx playwright install chromium && npm run test:e2e
 - Side-panel slide-in on country click.
 - 12-month seasonal demand chart (Recharts).
 - Demographics donut + rival ranking table for the selected region.
+
+---
+
+## 📅 Current Update: 2026-04-22 (Phase 3)
+
+### 🚀 Milestone: Phase-3 — Regional Characteristics Panel [COMPLETED]
+
+FR-03 is now live. Clicking any country on the map slides in a left-side panel showing headline KPIs, a 12-month seasonal demand chart, a demographics donut, the region's top routes, and a ranked list of rivals by market share. All 30 seeded regions render at least the synthesized demand curve and rival ranking; a curated subset of 10 regions (US, GB, JP, FR, IN, DE, AU, BR, AE, SG) additionally renders top routes and demographics.
+
+---
+
+### ✅ Accomplishments
+
+#### Task-3.1: Backend `GET /api/regions/{iso_code}`
+
+- Extended [backend/app/routers/regions.py](../backend/app/routers/regions.py) with a single-region endpoint returning:
+  - Headline KPIs (`demand_index`, `avg_booking_value`, `snapshot_month`).
+  - **`monthly_demand`**: 12-month curve synthesized with `value = demand_index × (1 + 0.3 cos(2π (month − peak) / 12))`. Peak is **July** for Northern-hemisphere regions and **January** for Oceania / South America. This avoids an Alembic migration for derived data — the API contract is stable when real ingestion replaces it.
+  - **`top_routes`** and **`demographics`**: JSONB passthrough from the new seed data.
+  - **`rival_ranking`**: joins `rival_region_snapshots` + `rivals` ordered by `market_share_pct desc`.
+- Returns **HTTP 404** on unknown ISO codes.
+
+#### Task-3.2: Seed data for Phase-3 shape
+
+- Extended [data/seeds/seed.py](../data/seeds/seed.py):
+  - Hand-curated `top_routes` (3/region) and `demographics` (4-segment, sum to 100) for 10 focus regions.
+  - Deterministic `rival_region_snapshots` generator (`random.seed(42)`) — 5-7 active rivals per region, home-country bonus ×4 (so MakeMyTrip dominates IN, Agoda dominates SG, etc.), shares normalized to sum to 80% of market.
+  - Assertion bumped: `snapshot_count >= 150` rows for the seeded month.
+
+#### Task-3.3: Frontend panel + charts
+
+- **[`RegionPanel.tsx`](../frontend/src/components/RegionPanel.tsx)** — 380 px left-docked panel with 320 ms slide-in keyframe (`region-panel-slide-in`), Esc/× close, `loading`/`error` states.
+- **[`DemandChart.tsx`](../frontend/src/components/DemandChart.tsx)** — Recharts `BarChart` with 12 month labels.
+- **[`DemographicsDonut.tsx`](../frontend/src/components/DemographicsDonut.tsx)** — Recharts `PieChart` with 6-color segment palette, legend shows `segment · share%`.
+- **[`RivalRankingTable.tsx`](../frontend/src/components/RivalRankingTable.tsx)** — 3-column table (#, rival, share) with category subtitle per row.
+- **[`demographics.ts`](../frontend/src/utils/demographics.ts)** — pure normalizer: clamps negatives, drops NaN/∞, re-scales to sum to 100, returns `[]` on empty/zero input.
+
+#### Task-3.4: Wiring
+
+- [`WorldMap.tsx`](../frontend/src/components/WorldMap.tsx) — added a `click` handler on each feature that calls `openRegion(props.iso_code)`.
+- [`regionDetailStore.ts`](../frontend/src/stores/regionDetailStore.ts) — Zustand store with in-flight-request guarding (discards stale responses if a second click lands before the first `await` settles).
+- [`App.tsx`](../frontend/src/App.tsx) — mounts `<RegionPanel/>` alongside the existing rival card.
+
+---
+
+### 🧪 Verification Results
+
+#### 🐍 Monthly-demand synthesis sanity check
+
+```text
+$ python -c "from app.routers.regions import _synthesize_monthly_demand; ..."
+Northern peak month: 7     (Europe, demand_index=83 → Jul=107.9, Jan=58.1)
+Southern peak month: 1     (Oceania, demand_index=60 → Jan=peak)
+Null index: []
+```
+
+#### 🔍 Lint / Type-Check / Build
+
+```text
+npm run lint  → 0 warnings, 0 errors
+tsc --noEmit  → clean
+vite build    → 717 modules transformed
+                dist/assets/index.js  810.16 kB (gzip 231.35 kB)
+                dist/assets/index.css  23.49 kB (gzip   8.22 kB)
+```
+
+The jump in JS bundle size is Recharts landing for the first time (~180 kB gzipped). A future optimization pass can code-split the panel via `React.lazy()`, but the MVP stays one-bundle for simplicity.
+
+#### 🧮 Frontend Unit Tests
+
+```text
+✓ src/utils/demographics.test.ts (7 tests) 2ms
+✓ src/utils/colorScale.test.ts   (17 tests) 2ms
+Test Files  2 passed (2) | Tests  24 passed (24)
+```
+
+The 7 new demographics tests cover: already-100 pass-through, rounding drift (99.5 → 100), over-100 (200 → rescale), empty input, all-zero, negative clamp, NaN/∞ drop.
+
+#### 🌐 Backend route registration
+
+```text
+['/api/regions', '/api/regions/{iso_code}', '/api/rivals', '/docs', '/healthz', ...]
+```
+
+---
+
+### 🎬 Expected Results When Running the App
+
+Start the three processes (see [README.md](../README.md) → "Running the App"), then in the browser at **<http://localhost:3000>**:
+
+| Action | Expected result |
+| --- | --- |
+| Page load | Header bar with title + category chips + KPI selector. World map centered at [20, 0] zoom 2 with 233 country boundaries and 30 of them color-shaded on the sky-100 → sky-600 choropleth. 9 violet rival pins visible (clustered at continents at zoom < 5). |
+| **Click a seeded country (e.g. France)** | Left-side panel slides in over ~320 ms. Header: **"France · Europe · snapshot 2026-04-01"**. KPIs row: *Demand Index* **83**, *Avg Booking Value* **$320.75**. Bar chart peaks visibly in July. Donut shows 4 segments totaling 100%. Top-routes list shows "Paris → Nice 19.4%", "Paris → Marseille 14.6%", "Paris → Bordeaux 10.8%". Rival-ranking table lists 5-7 rivals with their market-share %. |
+| **Click a country with no seeded detail (e.g. Poland)** | Panel opens; demand chart + rival ranking still render. Demographics and routes sections show "No data seeded for this region." |
+| **Click Australia** | Same panel shape, but the demand bar chart **peaks in January** (Southern-hemisphere seasonality). |
+| **Switch to another country** | Panel stays open, content swaps in place. Brief "Loading…" state appears if the fetch takes >100 ms. |
+| **Press Esc or click ×** | Panel slides/fades away; map stays at its current zoom + pan. |
+| **Click a rival pin** | Violet summary card appears top-right (Phase 2 behavior). Rival card and region panel can coexist on screen. |
+
+Direct API check from a terminal:
+
+```bash
+curl -s http://localhost:8000/api/regions/FR | jq '{name, demand_index, peak_month: (.monthly_demand | max_by(.value).month), ranking_count: (.rival_ranking | length)}'
+# → {"name": "France", "demand_index": 83, "peak_month": 7, "ranking_count": 5-7}
+```
+
+---
+
+### 🏗️ Technical Decisions & Troubleshooting
+
+> [!IMPORTANT]
+> **Synthesize, don't migrate** — The design document's ERD has `top_routes` and `demographics` JSONB but no monthly time series. Adding a `monthly_demand` column would force an Alembic revision + data backfill. **Decision**: derive the 12-month series at request time from `demand_index` + hemisphere. When real ingestion lands in Phase 5, we swap the synthesizer for a DB read without changing the API contract.
+
+> [!TIP]
+> **`cos` vs `sin` for seasonality** — An initial `sin(2π (m − peak) / 12)` variant placed the peak 3 months after the named peak month (sin peaks at π/2, not 0). **Fix**: `cos(2π (m − peak) / 12)` peaks exactly at `m = peak`. Small thing, caught by a quick sanity print before any UI hit the endpoint.
+
+> [!NOTE]
+> **Vitest picking up Playwright specs** — Adding Phase-3 introduced a second `npm test` run where Vitest tried to execute `e2e/rivals.spec.ts` (Playwright's `test.describe` under Vitest throws "two different versions of @playwright/test"). **Fix**: added `exclude: ['node_modules/**', 'dist/**', 'e2e/**']` to `vite.config.ts`'s `test` section. Should have been there since Phase 2, but the vitest default was hiding the issue until a second spec landed.
+
+---
+
+### 🛠️ Active Development Workflow
+
+| Service | Command | Status |
+| --- | --- | --- |
+| **Database** | `docker compose up -d db` | Required |
+| **Backend API** | `cd backend && uvicorn app.main:app --reload` | Serves `/api/regions`, `/api/regions/{iso}`, `/api/rivals` |
+| **Frontend UI** | `cd frontend && npm run dev` | Renders map, pins, filter, rival card, **region panel** |
+| **Unit tests** | `cd frontend && npm test` | 24/24 passing |
+| **E2E tests** | `cd frontend && npm run test:e2e` | Scaffolded (needs chromium install) |
+
+---
+
+**Next Phase**: **Phase 4 — KPI Header + Comparison View**
+
+- `GET /api/kpis/global` returning 3 headline KPIs.
+- KPI strip in header bar that responds to category and time filters.
+- Multi-select country picker (max 3).
+- Side-by-side comparison table with winner-cell highlighting.

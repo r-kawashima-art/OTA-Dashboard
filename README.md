@@ -9,7 +9,7 @@ A world-map-based dashboard for monitoring rival Online Travel Agencies (OTAs) a
 | 0 | Monorepo scaffold, DB migrations, seed data, CI | **Complete** |
 | 1 | Interactive world map, KPI choropleth, hover tooltips (FR-01) | **Complete** |
 | 2 | Rival company marker overlay (FR-02) | **Complete** |
-| 3 | Regional characteristics panel (FR-03) | Not started |
+| 3 | Regional characteristics panel (FR-03) | **Complete** |
 | 4 | KPI header + comparison view (FR-04, FR-05) | Not started |
 | 5 | Time-period filter + CSV/PDF export (FR-06) | Not started |
 
@@ -86,9 +86,10 @@ docker compose stop db             # keeps DB data
 Smoke-check the stack in a fourth terminal:
 
 ```bash
-curl -s http://localhost:8000/healthz                              # → {"status":"ok"}
-curl -s http://localhost:8000/api/regions | jq '.features | length' # → 233
-curl -s http://localhost:8000/api/rivals  | jq '.count'             # → 9
+curl -s http://localhost:8000/healthz                                # → {"status":"ok"}
+curl -s http://localhost:8000/api/regions | jq '.features | length'   # → 233
+curl -s http://localhost:8000/api/rivals  | jq '.count'               # → 9
+curl -s http://localhost:8000/api/regions/FR | jq '.name, .demand_index'  # → "France", 83
 ```
 
 > [!TIP]
@@ -190,44 +191,19 @@ npm run dev
 
 Open `http://localhost:3000` in your browser.
 
-## Run the app
+### 5. Interact with the dashboard
 
-1. Database (PostgreSQL + PostGIS via Docker)
+Once all three services are up, these user actions should produce the following results:
 
-```bash
-cd /Users/r-kawashima/Projects/OTA-Dashboard
-docker compose up -d db
-```
-
-First time only, seed the data:
-
-```bash
-.venv/bin/python data/seeds/seed.py
-```
-
-Expect: "Seeded 9 rivals, 30 regions, 30 region_metrics."
-2. Backend (FastAPI — port 8000)
-
-```bash
-cd /Users/r-kawashima/Projects/OTA-Dashboard/backend
-../.venv/bin/uvicorn app.main:app --reload
-```
-
-Serves /api/regions and /api/rivals
-
-Smoke-check in another terminal:
-
-```bash
-curl -s http://localhost:8000/healthz            # → {"status":"ok"}
-curl -s http://localhost:8000/api/rivals | head  # → {"rivals":[...], "count":9}
-```
-
-1. Frontend (Vite — port 3000)
-
-```bash
-cd /Users/r-kawashima/Projects/OTA-Dashboard/frontend
-npm run dev
-```
+| Action | Expected result |
+| --- | --- |
+| Page load at `:3000` | Header (title + category chips + KPI selector) and world map centered at [20, 0] zoom 2. 233 country boundaries, 30 color-shaded (Phase 1). 9 violet rival pins, clustered at zoom < 5 (Phase 2). |
+| Click a rival pin | Violet summary card slides in top-right with name, HQ, category, business model, AI strategy, website. (Phase 2) |
+| **Click a country** (e.g. France) | Left-side panel slides in within ~320 ms showing KPIs (Demand Index, Avg Booking Value), a 12-month demand bar chart peaking in July, a demographics donut summing to 100%, top routes, and rivals ranked by market share. (Phase 3) |
+| Click Australia / Brazil | Same panel — demand chart peaks in **January** (Southern-hemisphere seasonality). |
+| Press Esc or click × | Panel closes; map retains current zoom/pan. |
+| Switch KPI in header dropdown | Choropleth colors and hover tooltips update atomically. |
+| Toggle a category chip | Matching rival pins show/hide on the map. |
 
 ## Project Structure
 
@@ -237,24 +213,32 @@ OTA-Worldmap/
 │   ├── index.html                     # Vite entry document
 │   ├── src/
 │   │   ├── main.tsx                   # React root + global CSS import
-│   │   ├── App.tsx                    # Layout shell (header + map + rival card)
+│   │   ├── App.tsx                    # Layout shell (header + map + panels)
 │   │   ├── index.css                  # App styles + Leaflet/MarkerCluster CSS
-│   │   ├── types.ts                   # KPI, GeoJSON, and Rival types
+│   │   ├── types.ts                   # KPI, Rival, RegionDetail types
 │   │   ├── api/
 │   │   │   ├── regions.ts             # fetch wrapper for /api/regions
+│   │   │   ├── regionDetail.ts        # fetch wrapper for /api/regions/{iso}
 │   │   │   └── rivals.ts              # fetch wrapper for /api/rivals
 │   │   ├── components/
-│   │   │   ├── WorldMap.tsx           # Leaflet map + choropleth layer
+│   │   │   ├── WorldMap.tsx           # Leaflet map + choropleth + click handler
 │   │   │   ├── KpiSelector.tsx        # KPI dropdown
 │   │   │   ├── RivalMarkersLayer.tsx  # leaflet.markercluster rival pins
 │   │   │   ├── RivalSummaryCard.tsx   # Floating card on marker click
-│   │   │   └── RivalCategoryFilter.tsx # Category chip filter
+│   │   │   ├── RivalCategoryFilter.tsx # Category chip filter
+│   │   │   ├── RegionPanel.tsx        # Phase-3 side-panel shell
+│   │   │   ├── DemandChart.tsx        # 12-month Recharts BarChart
+│   │   │   ├── DemographicsDonut.tsx  # Recharts PieChart donut
+│   │   │   └── RivalRankingTable.tsx  # Market-share ranking per region
 │   │   ├── stores/
-│   │   │   ├── kpiStore.ts            # Zustand store (selected KPI)
-│   │   │   └── rivalStore.ts          # Zustand store (rivals, categories, selection)
+│   │   │   ├── kpiStore.ts            # Zustand (selected KPI)
+│   │   │   ├── rivalStore.ts          # Zustand (rivals, categories, selection)
+│   │   │   └── regionDetailStore.ts   # Zustand (region-panel state)
 │   │   └── utils/
 │   │       ├── colorScale.ts          # Choropleth color interpolation
-│   │       └── colorScale.test.ts     # Vitest unit tests
+│   │       ├── colorScale.test.ts     # Vitest unit tests
+│   │       ├── demographics.ts        # Donut-share normalizer
+│   │       └── demographics.test.ts   # Vitest unit tests
 │   ├── e2e/
 │   │   └── rivals.spec.ts             # Playwright smoke test (FR-02)
 │   ├── playwright.config.ts
@@ -270,7 +254,7 @@ OTA-Worldmap/
 │   │   │   ├── region.py              # Region, RegionMetrics
 │   │   │   └── rival.py               # Rival, RivalRegionSnapshot
 │   │   └── routers/
-│   │       ├── regions.py             # GET /api/regions (GeoJSON + KPIs)
+│   │       ├── regions.py             # /api/regions + /api/regions/{iso}
 │   │       └── rivals.py              # GET /api/rivals (roster + HQ coords)
 │   ├── migrations/                    # Alembic migration files
 │   ├── alembic.ini
@@ -297,6 +281,7 @@ OTA-Worldmap/
 | `GET` | `/healthz` | Liveness probe | `{"status": "ok"}` |
 | `GET` | `/api/regions` | Country boundaries merged with the latest KPI snapshot per region | GeoJSON `FeatureCollection` — 233 features, `properties` include `iso_code`, `name`, `continent`, `demand_index`, `avg_booking_value`, `snapshot_month` |
 | `GET` | `/api/rivals` | Rival OTA roster with HQ coordinates. Supports `?category=B2C&category=B2B` | `{ "rivals": [{id, name, hq_country, category, business_model, ai_strategy, website, lat, lng}], "count": n }` |
+| `GET` | `/api/regions/{iso_code}` | Region detail for a single country (FR-03). Returns 404 on unknown ISO | `{ iso_code, name, continent, demand_index, avg_booking_value, snapshot_month, monthly_demand: [{month: 1..12, value}], top_routes, demographics, rival_ranking }` |
 
 Interactive OpenAPI docs are available at `http://localhost:8000/docs` when the backend is running.
 
@@ -304,11 +289,16 @@ Smoke-check from the terminal:
 
 ```bash
 curl -s http://localhost:8000/healthz
-curl -s http://localhost:8000/api/regions | jq '.features | length'   # 233
+curl -s http://localhost:8000/api/regions | jq '.features | length'    # 233
 curl -s http://localhost:8000/api/regions \
   | jq '[.features[] | select(.properties.demand_index != null)] | length'   # 30
-curl -s http://localhost:8000/api/rivals  | jq '.count'               # 9
-curl -s 'http://localhost:8000/api/rivals?category=B2C' | jq '.count' # filtered
+curl -s http://localhost:8000/api/rivals  | jq '.count'                # 9
+curl -s 'http://localhost:8000/api/rivals?category=B2C' | jq '.count'  # filtered
+curl -s http://localhost:8000/api/regions/FR \
+  | jq '{name, demand_index, peak_month: (.monthly_demand | max_by(.value).month), ranking: (.rival_ranking | length)}'
+# → {"name":"France","demand_index":83,"peak_month":7,"ranking":5..7}
+curl -s http://localhost:8000/api/regions/AU \
+  | jq '.monthly_demand | max_by(.value).month'                        # 1 (Southern hemisphere)
 ```
 
 ---

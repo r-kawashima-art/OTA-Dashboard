@@ -6,6 +6,7 @@ import { GeoJSON, MapContainer, TileLayer } from 'react-leaflet'
 import { fetchRegions } from '../api/regions'
 import { RivalMarkersLayer } from './RivalMarkersLayer'
 import { useKpiStore } from '../stores/kpiStore'
+import { useRegionDetailStore } from '../stores/regionDetailStore'
 import {
   KPI_DEFINITIONS,
   type RegionFeatureCollection,
@@ -34,6 +35,7 @@ function renderTooltipHtml(props: RegionProperties, kpiLabel: string, kpiValue: 
 
 export function WorldMap() {
   const selectedKpi = useKpiStore((s) => s.selectedKpi)
+  const openRegion = useRegionDetailStore((s) => s.openRegion)
   const [data, setData] = useState<RegionFeatureCollection | null>(null)
   const [error, setError] = useState<string | null>(null)
   const geoJsonRef = useRef<L.GeoJSON | null>(null)
@@ -94,6 +96,11 @@ export function WorldMap() {
       mouseout: () => {
         if (geoJsonRef.current) {
           geoJsonRef.current.resetStyle(pathLayer)
+        }
+      },
+      click: () => {
+        if (props.iso_code) {
+          void openRegion(props.iso_code)
         }
       },
     })

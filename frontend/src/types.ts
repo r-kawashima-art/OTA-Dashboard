@@ -38,6 +38,42 @@ export interface RivalsResponse {
   count: number
 }
 
+export interface MonthlyDemandPoint {
+  month: number
+  value: number
+}
+
+export interface TopRoute {
+  route: string
+  share_pct: number
+}
+
+export interface DemographicSegment {
+  segment: string
+  share_pct: number
+}
+
+export interface RivalRankingEntry {
+  rival_id: string
+  name: string
+  category: string | null
+  market_share_pct: number
+  booking_volume: number | null
+}
+
+export interface RegionDetail {
+  iso_code: string
+  name: string
+  continent: string | null
+  demand_index: number | null
+  avg_booking_value: number | null
+  snapshot_month: string | null
+  monthly_demand: MonthlyDemandPoint[]
+  top_routes: TopRoute[]
+  demographics: DemographicSegment[]
+  rival_ranking: RivalRankingEntry[]
+}
+
 export const KPI_DEFINITIONS: Record<KpiKey, KpiDefinition> = {
   demand_index: {
     key: 'demand_index',

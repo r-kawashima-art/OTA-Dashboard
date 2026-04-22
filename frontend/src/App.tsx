@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 
 import { fetchRivals } from './api/rivals'
 import { KpiSelector } from './components/KpiSelector'
+import { RegionPanel } from './components/RegionPanel'
 import { RivalCategoryFilter } from './components/RivalCategoryFilter'
 import { RivalSummaryCard } from './components/RivalSummaryCard'
 import { WorldMap } from './components/WorldMap'
@@ -45,6 +46,7 @@ function App() {
         )}
         <WorldMap />
         <RivalSummaryCard />
+        <RegionPanel />
       </main>
     </div>
   )
