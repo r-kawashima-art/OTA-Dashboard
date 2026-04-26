@@ -7,7 +7,7 @@ import globals from 'globals'
 export default [
   js.configs.recommended,
   {
-    ignores: ['dist/**', 'node_modules/**', 'vite.config.ts'],
+    ignores: ['dist/**', 'node_modules/**', 'vite.config.ts', 'playwright.config.ts', 'e2e/**'],
   },
   {
     files: ['**/*.{ts,tsx}'],

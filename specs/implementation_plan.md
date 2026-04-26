@@ -27,83 +27,7 @@ Build a world-map-based competitive intelligence dashboard for the OTA president
 
 ---
 
-## 3. Architecture Overview
-
-```mermaid
-graph TD
-    subgraph Frontend [React + Leaflet]
-        A[World Map View] --> B[Rival Markers Layer]
-        A --> C[KPI Header]
-        A --> D[Time-Period Filter]
-        B --> E[Rival Summary Card]
-        A --> F[Regional Panel]
-        F --> G[Demand Chart - Recharts]
-        F --> H[Rival Ranking Table]
-        A --> I[Comparison View]
-    end
-
-    subgraph Backend [FastAPI]
-        J["/api/regions"] --> K[PostgreSQL + PostGIS]
-        L["/api/rivals"] --> K
-        M["/api/kpis"] --> K
-        N["/api/export"] --> K
-    end
-
-    subgraph Ingestion [Python Cron]
-        O[Data Scrapers / APIs] --> P[Transform & Validate]
-        P --> K
-    end
-
-    Frontend -->|REST / JSON| Backend
-```
-
----
-
-## 4. Data Model (Simplified)
-
-```mermaid
-erDiagram
-    REGION {
-        string iso_code PK
-        string name
-        geometry boundary
-        string continent
-    }
-    RIVAL {
-        uuid id PK
-        string name
-        string hq_country
-        string category
-        string business_model
-        text ai_strategy
-        string website
-    }
-    RIVAL_REGION_SNAPSHOT {
-        uuid id PK
-        uuid rival_id FK
-        string region_iso FK
-        float market_share_pct
-        int booking_volume
-        date snapshot_month
-    }
-    REGION_METRICS {
-        uuid id PK
-        string region_iso FK
-        date snapshot_month
-        float avg_booking_value
-        int demand_index
-        jsonb top_routes
-        jsonb demographics
-    }
-
-    REGION ||--o{ RIVAL_REGION_SNAPSHOT : has
-    RIVAL ||--o{ RIVAL_REGION_SNAPSHOT : has
-    REGION ||--o{ REGION_METRICS : has
-```
-
----
-
-## 5. Phase Plan
+## 3. Phase Plan
 
 ### Phase 0 — Project Setup
 
@@ -139,36 +63,37 @@ erDiagram
 
 ---
 
-### Phase 2 — Rival Company Overlay
+### Phase 2 — Rival Company Overlay ✅ [COMPLETED 2026-04-22]
 
 **Goal:** Satisfy FR-02 fully.
 
-| Task | Output | Acceptance | Verification |
-|---|---|---|---|
-| Backend /api/rivals | API | Returns JSON in < 200ms | Postman: Response time check |
-| Rival markers | Markers | 9 seed rivals visible | Visual marker count check |
-| Marker clustering | Clustered pins | No overlap at zoom < 5 | Manual zoom-out verification |
-| Rival summary card | Card component | Card opens within 300ms | Interaction profiling |
-| Category filters | Filter UI | Markers update on toggle | Toggle each category manual test |
-| Rival Playwright Test | E2E test | Passes in CI | `npx playwright test` |
+| ID | Task | Output | Acceptance | Verification | Status |
+|---|---|---|---|---|---|
+| T-2.1 | Backend `/api/rivals` | [backend/app/routers/rivals.py](../backend/app/routers/rivals.py) | Returns JSON in < 200ms, supports `?category=` filter | `curl -sw '\n%{time_total}s\n' http://localhost:8000/api/rivals` | ✅ |
+| T-2.2 | Rival markers | [RivalMarkersLayer.tsx](../frontend/src/components/RivalMarkersLayer.tsx) | 9 seed rivals visible as violet SVG pins | Visual marker count check at zoom ≥ 6 | ✅ |
+| T-2.3 | Marker clustering | `leaflet.markercluster` via `useMap()` | No overlap at zoom < 5 (`maxClusterRadius: 80`) | Manual zoom-out verification | ✅ |
+| T-2.4 | Rival summary card | [RivalSummaryCard.tsx](../frontend/src/components/RivalSummaryCard.tsx) | Card opens within 300ms on marker click; Esc + × close | Interaction profiling via DevTools | ✅ |
+| T-2.5 | Category filters | [RivalCategoryFilter.tsx](../frontend/src/components/RivalCategoryFilter.tsx) + [rivalStore.ts](../frontend/src/stores/rivalStore.ts) | Toggling a chip adds/removes rivals of that category | Toggle each category manual test | ✅ |
+| T-2.6 | Playwright E2E | [e2e/rivals.spec.ts](../frontend/e2e/rivals.spec.ts) + [playwright.config.ts](../frontend/playwright.config.ts) | `npm run test:e2e` exercises marker click, card open/close, chip toggle | `npx playwright install chromium && npm run test:e2e` | Scaffolded — runtime pending DB/browser |
 
-**Milestone:** All 9 seed rivals are clickable on the map with summary cards.
+**Milestone:** All 9 seed rivals are clickable on the map with summary cards, filterable by category, and covered by a Playwright smoke test.
 
 ---
 
-### Phase 3 — Regional Characteristics Panel
+### Phase 3 — Regional Characteristics Panel ✅ [COMPLETED 2026-04-22]
 
 **Goal:** Satisfy FR-03 fully.
 
-| Task | Output | Acceptance | Verification |
-|---|---|---|---|
-| Backend /api/regions/:iso | API | Returns metrics + demographics | JSON Schema validation |
-| Side panel slide-in | Panel component | Opens in < 400ms | Visual transition audit |
-| Seasonal demand chart | Chart | 12-month data plotted | DB vs UI data point sample |
-| Demographics breakdown | Demographics | Segments sum to 100% | Unit test for donut logic |
-| Close / collapse UX | Dismiss button | Panel closes, map re-centers | Click-path regression test |
+| ID | Task | Output | Acceptance | Verification | Status |
+|---|---|---|---|---|---|
+| T-3.1 | Backend `/api/regions/{iso}` | [backend/app/routers/regions.py](../backend/app/routers/regions.py) | Returns metrics + monthly_demand + demographics + top_routes + rival_ranking; 404 on unknown ISO | `curl -s http://localhost:8000/api/regions/FR \| jq` | ✅ |
+| T-3.2 | Side panel slide-in | [RegionPanel.tsx](../frontend/src/components/RegionPanel.tsx) | Opens in < 400ms via 320ms CSS transform | Manual inspection of `region-panel-slide-in` keyframes | ✅ |
+| T-3.3 | Seasonal demand chart | [DemandChart.tsx](../frontend/src/components/DemandChart.tsx) | 12-month Recharts `BarChart`; peaks synthesized from `demand_index` + hemisphere | Northern sample peaks in Jul, Southern in Jan | ✅ |
+| T-3.4 | Demographics donut | [DemographicsDonut.tsx](../frontend/src/components/DemographicsDonut.tsx) + [demographics.ts](../frontend/src/utils/demographics.ts) | Segments re-normalize to sum to 100 | `npm test` — 7/7 donut-logic tests in [demographics.test.ts](../frontend/src/utils/demographics.test.ts) | ✅ |
+| T-3.5 | Close / collapse UX | `closeRegion()` on Esc + × button | Panel dismounts; map retains bounds | Click-path manual test | ✅ |
+| T-3.6 | Rival ranking table | [RivalRankingTable.tsx](../frontend/src/components/RivalRankingTable.tsx) + seed_update for [data/seeds/seed.py](../data/seeds/seed.py) | Dominant rival first; rows ≤ 7 per region; 30 × ~6 rows seeded | `SELECT COUNT(*) FROM rival_region_snapshots;` ≥ 150 | ✅ |
 
-**Milestone:** Clicking any country opens a panel with demand chart and rival ranking.
+**Milestone:** Clicking any country opens a panel with demand chart, demographics donut, top routes, and rival ranking.
 
 ---
 

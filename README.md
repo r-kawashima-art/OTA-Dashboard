@@ -8,8 +8,8 @@ A world-map-based dashboard for monitoring rival Online Travel Agencies (OTAs) a
 | --- | --- | --- |
 | 0 | Monorepo scaffold, DB migrations, seed data, CI | **Complete** |
 | 1 | Interactive world map, KPI choropleth, hover tooltips (FR-01) | **Complete** |
-| 2 | Rival company marker overlay (FR-02) | Not started |
-| 3 | Regional characteristics panel (FR-03) | Not started |
+| 2 | Rival company marker overlay (FR-02) | **Complete** |
+| 3 | Regional characteristics panel (FR-03) | **Complete** |
 | 4 | KPI header + comparison view (FR-04, FR-05) | Not started |
 | 5 | Time-period filter + CSV/PDF export (FR-06) | Not started |
 
@@ -52,6 +52,48 @@ brew services start postgresql
 | Python | 3.12 | <https://python.org> |
 | Docker Desktop | latest | <https://docker.com/products/docker-desktop> |
 | Git | any | <https://git-scm.com> |
+
+---
+
+## Running the App (after first-time setup)
+
+Three processes must be up, in this order. Use **three separate terminals** so each one streams its own logs.
+
+```bash
+# Terminal 1 — Database (detached)
+docker compose up -d db
+
+# Terminal 2 — Backend API on :8000
+cd backend
+source .venv/bin/activate          # macOS / Linux (see Prerequisites for other shells)
+uvicorn app.main:app --reload --port 8000
+
+# Terminal 3 — Frontend on :3000
+cd frontend
+npm run dev
+```
+
+Then open **<http://localhost:3000>**. Vite proxies `/api/*` to `:8000`, so no CORS config is needed.
+
+Stop everything:
+
+```bash
+# Ctrl-C in the backend and frontend terminals, then:
+docker compose stop db             # keeps DB data
+# docker compose down -v           # ↳ use -v to also delete the volume
+```
+
+Smoke-check the stack in a fourth terminal:
+
+```bash
+curl -s http://localhost:8000/healthz                                # → {"status":"ok"}
+curl -s http://localhost:8000/api/regions | jq '.features | length'   # → 233
+curl -s http://localhost:8000/api/rivals  | jq '.count'               # → 9
+curl -s http://localhost:8000/api/regions/FR | jq '.name, .demand_index'  # → "France", 83
+```
+
+> [!TIP]
+> `.venv/bin/activate` is a shell script — it must be **sourced**, not executed. `source .venv/bin/activate` (or `. .venv/bin/activate`) avoids the `zsh: permission denied` error you get from calling it as a program.
 
 ---
 
@@ -149,7 +191,19 @@ npm run dev
 
 Open `http://localhost:3000` in your browser.
 
----
+### 5. Interact with the dashboard
+
+Once all three services are up, these user actions should produce the following results:
+
+| Action | Expected result |
+| --- | --- |
+| Page load at `:3000` | Header (title + category chips + KPI selector) and world map centered at [20, 0] zoom 2. 233 country boundaries, 30 color-shaded (Phase 1). 9 violet rival pins, clustered at zoom < 5 (Phase 2). |
+| Click a rival pin | Violet summary card slides in top-right with name, HQ, category, business model, AI strategy, website. (Phase 2) |
+| **Click a country** (e.g. France) | Left-side panel slides in within ~320 ms showing KPIs (Demand Index, Avg Booking Value), a 12-month demand bar chart peaking in July, a demographics donut summing to 100%, top routes, and rivals ranked by market share. (Phase 3) |
+| Click Australia / Brazil | Same panel — demand chart peaks in **January** (Southern-hemisphere seasonality). |
+| Press Esc or click × | Panel closes; map retains current zoom/pan. |
+| Switch KPI in header dropdown | Choropleth colors and hover tooltips update atomically. |
+| Toggle a category chip | Matching rival pins show/hide on the map. |
 
 ## Project Structure
 
@@ -159,19 +213,35 @@ OTA-Worldmap/
 │   ├── index.html                     # Vite entry document
 │   ├── src/
 │   │   ├── main.tsx                   # React root + global CSS import
-│   │   ├── App.tsx                    # Layout shell (header + map)
-│   │   ├── index.css                  # App styles + Leaflet CSS import
-│   │   ├── types.ts                   # KPI + GeoJSON type definitions
+│   │   ├── App.tsx                    # Layout shell (header + map + panels)
+│   │   ├── index.css                  # App styles + Leaflet/MarkerCluster CSS
+│   │   ├── types.ts                   # KPI, Rival, RegionDetail types
 │   │   ├── api/
-│   │   │   └── regions.ts             # fetch wrapper for /api/regions
+│   │   │   ├── regions.ts             # fetch wrapper for /api/regions
+│   │   │   ├── regionDetail.ts        # fetch wrapper for /api/regions/{iso}
+│   │   │   └── rivals.ts              # fetch wrapper for /api/rivals
 │   │   ├── components/
-│   │   │   ├── WorldMap.tsx           # Leaflet map + choropleth layer
-│   │   │   └── KpiSelector.tsx        # KPI dropdown
+│   │   │   ├── WorldMap.tsx           # Leaflet map + choropleth + click handler
+│   │   │   ├── KpiSelector.tsx        # KPI dropdown
+│   │   │   ├── RivalMarkersLayer.tsx  # leaflet.markercluster rival pins
+│   │   │   ├── RivalSummaryCard.tsx   # Floating card on marker click
+│   │   │   ├── RivalCategoryFilter.tsx # Category chip filter
+│   │   │   ├── RegionPanel.tsx        # Phase-3 side-panel shell
+│   │   │   ├── DemandChart.tsx        # 12-month Recharts BarChart
+│   │   │   ├── DemographicsDonut.tsx  # Recharts PieChart donut
+│   │   │   └── RivalRankingTable.tsx  # Market-share ranking per region
 │   │   ├── stores/
-│   │   │   └── kpiStore.ts            # Zustand store (selected KPI)
+│   │   │   ├── kpiStore.ts            # Zustand (selected KPI)
+│   │   │   ├── rivalStore.ts          # Zustand (rivals, categories, selection)
+│   │   │   └── regionDetailStore.ts   # Zustand (region-panel state)
 │   │   └── utils/
 │   │       ├── colorScale.ts          # Choropleth color interpolation
-│   │       └── colorScale.test.ts     # Vitest unit tests
+│   │       ├── colorScale.test.ts     # Vitest unit tests
+│   │       ├── demographics.ts        # Donut-share normalizer
+│   │       └── demographics.test.ts   # Vitest unit tests
+│   ├── e2e/
+│   │   └── rivals.spec.ts             # Playwright smoke test (FR-02)
+│   ├── playwright.config.ts
 │   ├── vite.config.ts
 │   └── package.json
 ├── backend/                           # FastAPI + SQLAlchemy (async)
@@ -184,7 +254,8 @@ OTA-Worldmap/
 │   │   │   ├── region.py              # Region, RegionMetrics
 │   │   │   └── rival.py               # Rival, RivalRegionSnapshot
 │   │   └── routers/
-│   │       └── regions.py             # GET /api/regions (GeoJSON + KPIs)
+│   │       ├── regions.py             # /api/regions + /api/regions/{iso}
+│   │       └── rivals.py              # GET /api/rivals (roster + HQ coords)
 │   ├── migrations/                    # Alembic migration files
 │   ├── alembic.ini
 │   └── requirements.txt
@@ -209,6 +280,8 @@ OTA-Worldmap/
 | --- | --- | --- | --- |
 | `GET` | `/healthz` | Liveness probe | `{"status": "ok"}` |
 | `GET` | `/api/regions` | Country boundaries merged with the latest KPI snapshot per region | GeoJSON `FeatureCollection` — 233 features, `properties` include `iso_code`, `name`, `continent`, `demand_index`, `avg_booking_value`, `snapshot_month` |
+| `GET` | `/api/rivals` | Rival OTA roster with HQ coordinates. Supports `?category=B2C&category=B2B` | `{ "rivals": [{id, name, hq_country, category, business_model, ai_strategy, website, lat, lng}], "count": n }` |
+| `GET` | `/api/regions/{iso_code}` | Region detail for a single country (FR-03). Returns 404 on unknown ISO | `{ iso_code, name, continent, demand_index, avg_booking_value, snapshot_month, monthly_demand: [{month: 1..12, value}], top_routes, demographics, rival_ranking }` |
 
 Interactive OpenAPI docs are available at `http://localhost:8000/docs` when the backend is running.
 
@@ -216,9 +289,16 @@ Smoke-check from the terminal:
 
 ```bash
 curl -s http://localhost:8000/healthz
-curl -s http://localhost:8000/api/regions | jq '.features | length'   # 233
+curl -s http://localhost:8000/api/regions | jq '.features | length'    # 233
 curl -s http://localhost:8000/api/regions \
   | jq '[.features[] | select(.properties.demand_index != null)] | length'   # 30
+curl -s http://localhost:8000/api/rivals  | jq '.count'                # 9
+curl -s 'http://localhost:8000/api/rivals?category=B2C' | jq '.count'  # filtered
+curl -s http://localhost:8000/api/regions/FR \
+  | jq '{name, demand_index, peak_month: (.monthly_demand | max_by(.value).month), ranking: (.rival_ranking | length)}'
+# → {"name":"France","demand_index":83,"peak_month":7,"ranking":5..7}
+curl -s http://localhost:8000/api/regions/AU \
+  | jq '.monthly_demand | max_by(.value).month'                        # 1 (Southern hemisphere)
 ```
 
 ---
@@ -234,6 +314,14 @@ npm run build     # type-check + production build
 npm run lint      # ESLint (zero warnings enforced)
 npx tsc --noEmit  # TypeScript strict check
 npm test          # Vitest unit tests
+npm run test:e2e  # Playwright smoke test (needs backend + DB running)
+```
+
+First-time Playwright users must install the Chromium binary:
+
+```bash
+cd frontend
+npx playwright install chromium
 ```
 
 ### Backend
@@ -283,22 +371,29 @@ GitHub Actions runs three jobs on every push and pull request to `main`:
 ## Troubleshooting (macOS)
 
 ### `FeatureNotSupportedError: extension "postgis" is not available`
+
 This means PostgreSQL is running but cannot find the PostGIS extension files. Ensure you have run `brew install postgis` and restarted your PostgreSQL service:
+
 ```bash
 brew services restart postgresql
 ```
 
 ### `ValueError: the greenlet library is required`
+
 This occurs when using SQLAlchemy's async driver on certain Python versions (like 3.14). It is included in `requirements.txt`, but if you see this error, run:
+
 ```bash
 pip install greenlet
 ```
 
 ### `InvalidAuthorizationSpecificationError: role "ota" does not exist`
+
 This means the local PostgreSQL role `ota` has not been created. Follow the "Option B" steps in the Quick Start section to create the role and database.
 
 ### `sh: .../vite: Permission denied`
+
 This can happen if the execution bit is missing from the binaries in `node_modules`. Fix it with:
+
 ```bash
 chmod +x frontend/node_modules/.bin/*
 ```

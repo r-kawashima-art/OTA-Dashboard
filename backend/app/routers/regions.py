@@ -2,16 +2,22 @@
 from __future__ import annotations
 
 import json
+import math
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Region, RegionMetrics
+from app.models import Region, RegionMetrics, Rival, RivalRegionSnapshot
+
+# Continents whose summer peaks in Jan/Feb (Southern hemisphere). Anything else
+# peaks in Jul/Aug. Used to synthesize a plausible 12-month demand curve from
+# the single demand_index figure we currently seed per region.
+SOUTHERN_CONTINENTS = {"Oceania", "South America"}
 
 router = APIRouter(prefix="/api", tags=["regions"])
 
@@ -96,3 +102,106 @@ async def list_regions(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
         )
 
     return {"type": "FeatureCollection", "features": features}
+
+
+def _synthesize_monthly_demand(demand_index: int | None, continent: str | None) -> list[dict[str, Any]]:
+    """Synthesize a 12-month seasonal demand curve from a single `demand_index`.
+
+    Formula: `value = demand_index * (1 + 0.3 * cos(2π (month - peak) / 12))`.
+    `cos` peaks at 1 when `month == peak_month`. Northern-hemisphere regions
+    peak in July; Southern-hemisphere regions peak in January. This gives a
+    plausible seasonality for the Phase-3 chart without requiring us to
+    ingest a real monthly series yet.
+    """
+    if demand_index is None:
+        return []
+    peak_month = 1 if (continent or "") in SOUTHERN_CONTINENTS else 7
+    series: list[dict[str, Any]] = []
+    for month in range(1, 13):
+        seasonality = math.cos(2 * math.pi * (month - peak_month) / 12)
+        value = round(demand_index * (1 + 0.3 * seasonality), 1)
+        series.append({"month": month, "value": value})
+    return series
+
+
+@router.get("/regions/{iso_code}")
+async def get_region_detail(
+    iso_code: str,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Return the detailed regional characteristics for a single country.
+
+    Shape:
+        {
+          iso_code, name, continent,
+          demand_index, avg_booking_value, snapshot_month,
+          monthly_demand: [{month: 1..12, value: float}, ...],
+          top_routes:     [{route, share_pct}, ...],
+          demographics:   [{segment, share_pct}, ...],
+          rival_ranking:  [{rival_id, name, category, market_share_pct, booking_volume}, ...]
+        }
+    """
+    iso = iso_code.upper()
+
+    region = (
+        await db.execute(select(Region).where(Region.iso_code == iso))
+    ).scalar_one_or_none()
+    if region is None:
+        raise HTTPException(status_code=404, detail=f"Region {iso!r} not found")
+
+    # Latest region_metrics row for this region
+    metrics = (
+        await db.execute(
+            select(RegionMetrics)
+            .where(RegionMetrics.region_iso == iso)
+            .order_by(RegionMetrics.snapshot_month.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+
+    demand_index = metrics.demand_index if metrics else None
+    avg_booking_value = metrics.avg_booking_value if metrics else None
+    snapshot_month = (
+        metrics.snapshot_month.isoformat() if metrics and metrics.snapshot_month else None
+    )
+    top_routes = list(metrics.top_routes) if (metrics and metrics.top_routes) else []
+    demographics = list(metrics.demographics) if (metrics and metrics.demographics) else []
+
+    # Rival ranking by market share for this region, latest snapshot
+    ranking_rows = (
+        await db.execute(
+            select(
+                Rival.id,
+                Rival.name,
+                Rival.category,
+                RivalRegionSnapshot.market_share_pct,
+                RivalRegionSnapshot.booking_volume,
+            )
+            .join(RivalRegionSnapshot, RivalRegionSnapshot.rival_id == Rival.id)
+            .where(RivalRegionSnapshot.region_iso == iso)
+            .order_by(RivalRegionSnapshot.market_share_pct.desc())
+        )
+    ).all()
+    rival_ranking = [
+        {
+            "rival_id": str(rid),
+            "name": name,
+            "category": category,
+            "market_share_pct": share,
+            "booking_volume": volume,
+        }
+        for rid, name, category, share, volume in ranking_rows
+    ]
+
+    return {
+        "iso_code": region.iso_code,
+        "name": region.name,
+        "continent": region.continent,
+        "demand_index": demand_index,
+        "avg_booking_value": avg_booking_value,
+        "snapshot_month": snapshot_month,
+        "monthly_demand": _synthesize_monthly_demand(demand_index, region.continent),
+        "top_routes": top_routes,
+        "demographics": demographics,
+        "rival_ranking": rival_ranking,
+    }

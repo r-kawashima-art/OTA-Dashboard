@@ -122,3 +122,361 @@ body,
 .tooltip__kpi span {
   color: #475569;
 }
+
+.app-header__controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.rival-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+}
+
+.rival-filter__label {
+  font-weight: 500;
+  color: #475569;
+}
+
+.rival-filter__chips {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rival-filter__chip,
+.rival-filter__reset {
+  padding: 4px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.rival-filter__chip--active {
+  background: #ede9fe;
+  border-color: #7c3aed;
+  color: #5b21b6;
+}
+
+.rival-filter__chip:focus,
+.rival-filter__reset:focus {
+  outline: 2px solid #7c3aed;
+  outline-offset: 1px;
+}
+
+.rival-filter__reset {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.rival-pin {
+  background: transparent;
+  border: none;
+}
+
+.leaflet-tooltip.rival-tooltip {
+  background: #0f172a;
+  color: #f8fafc;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.24);
+}
+
+.leaflet-tooltip.rival-tooltip::before {
+  display: none;
+}
+
+.rival-card {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 320px;
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+  padding: 16px 18px;
+  z-index: 900;
+}
+
+.rival-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rival-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.rival-card__subtitle {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.rival-card__close {
+  border: none;
+  background: transparent;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.rival-card__close:hover {
+  color: #0f172a;
+}
+
+.rival-card__section {
+  margin-top: 10px;
+}
+
+.rival-card__section h3 {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7c3aed;
+}
+
+.rival-card__section p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.rival-card__link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 0.8125rem;
+  color: #7c3aed;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.rival-card__link:hover {
+  text-decoration: underline;
+}
+
+/* Region panel (Phase 3, FR-03) — slides in from the left of the map */
+.region-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 380px;
+  max-width: 90vw;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.12);
+  padding: 18px 20px 24px;
+  overflow-y: auto;
+  z-index: 800;
+  animation: region-panel-slide-in 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes region-panel-slide-in {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.2;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.region-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.region-panel__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.region-panel__subtitle {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.region-panel__close {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.region-panel__close:hover {
+  color: #0f172a;
+}
+
+.region-panel__status {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.875rem;
+}
+
+.region-panel__status--error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.region-panel__kpis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.region-panel__kpi-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.region-panel__kpi-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.region-panel__section {
+  margin-top: 18px;
+}
+
+.region-panel__section h3 {
+  margin: 0 0 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #334155;
+}
+
+.region-panel__empty {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.region-panel__routes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.region-panel__routes li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #f8fafc;
+  font-size: 0.875rem;
+}
+
+.region-panel__routes strong {
+  color: #0284c7;
+  font-weight: 600;
+}
+
+.rival-ranking {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.rival-ranking thead th {
+  text-align: left;
+  font-weight: 600;
+  color: #64748b;
+  padding: 6px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rival-ranking tbody td {
+  padding: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: top;
+}
+
+.rival-ranking__rank {
+  width: 24px;
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+.rival-ranking__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.rival-ranking__name {
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.rival-ranking__meta {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  margin-top: 1px;
+}
+
+/* marker-cluster color overrides — violet palette matches rival pins */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background-color: rgba(124, 58, 237, 0.25);
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background-color: #7c3aed;
+  color: #ffffff;
+  font-weight: 600;
+}
