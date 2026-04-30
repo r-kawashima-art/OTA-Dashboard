@@ -25,7 +25,9 @@ export interface Rival {
   id: string
   name: string
   hq_country: string | null
-  category: string | null
+  // Multiple categories per rival — some OTAs serve both B2C and B2B
+  // (e.g. Expedia + Expedia Partner Solutions, Traveloka + Traveloka for Business).
+  categories: string[]
   business_model: string | null
   ai_strategy: string | null
   website: string | null
@@ -56,7 +58,7 @@ export interface DemographicSegment {
 export interface RivalRankingEntry {
   rival_id: string
   name: string
-  category: string | null
+  categories: string[]
   market_share_pct: number
   booking_volume: number | null
 }

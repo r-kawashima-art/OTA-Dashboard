@@ -24,7 +24,9 @@ export function RivalRankingTable({ ranking }: Props) {
             <td className="rival-ranking__rank">{idx + 1}</td>
             <td>
               <div className="rival-ranking__name">{r.name}</div>
-              {r.category && <div className="rival-ranking__meta">{r.category}</div>}
+              {r.categories.length > 0 && (
+                <div className="rival-ranking__meta">{r.categories.join(' / ')}</div>
+              )}
             </td>
             <td className="rival-ranking__num">{r.market_share_pct.toFixed(1)}%</td>
           </tr>

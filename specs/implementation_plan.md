@@ -111,6 +111,25 @@ Build a world-map-based competitive intelligence dashboard for the OTA president
 
 **Milestone:** President can compare up to 3 regions in a table with row-level winner highlighting; KPI header bar reflects rival-category filter live. Verified via `npm run lint`, `npm run build` (TS strict), `npm test` (37/37), and live `/api/kpis/global` curl.
 
+#### Small Tweak Phase 4 ✅ [COMPLETED 2026-04-30]
+
+**Situation:** the rival roster only carried B2C OTAs, and `rivals.category` was a single VARCHAR — it couldn't represent OTAs that operate in both segments.
+
+**Resolution:**
+
+- Schema: migration [0002_rival_multi_category.py](../backend/migrations/versions/0002_rival_multi_category.py) drops `category VARCHAR` and adds `categories VARCHAR[]`, backfilling each existing row's prior category as a single-element array.
+- Model: [Rival.categories: ARRAY(String(50))](../backend/app/models/rival.py) replaces the scalar field.
+- API: [routers/rivals.py](../backend/app/routers/rivals.py) filters via Postgres array overlap (`Rival.categories.overlap(...)`), so `?category=B2B` matches both pure-B2B rivals and dual-category ones.
+- Seed: [seed.py](../data/seeds/seed.py) adds 6 new entries (Amadeus, Hotelbeds, TBO Tek, HRS, Riya Connect — pure B2B; Traveloka — both) and re-tags Expedia / Etraveli as `["B2C", "B2B"]` to reflect Expedia Partner Solutions and Etraveli's white-label arm.
+- Frontend: [types.ts](../frontend/src/types.ts), [rivalStore.ts](../frontend/src/stores/rivalStore.ts), [RivalCategoryFilter.tsx](../frontend/src/components/RivalCategoryFilter.tsx), [RivalMarkersLayer.tsx](../frontend/src/components/RivalMarkersLayer.tsx), [RivalSummaryCard.tsx](../frontend/src/components/RivalSummaryCard.tsx), [KpiHeaderBar.tsx](../frontend/src/components/KpiHeaderBar.tsx), and [RivalRankingTable.tsx](../frontend/src/components/RivalRankingTable.tsx) all consume `categories: string[]`. Visibility is "any active category" (overlap semantics, mirroring the backend).
+
+##### Acceptance Criteria
+
+- [x] User can review both B2C and B2B OTAs (some categorized to **both**). Verified: `/api/rivals` returns 15 rivals; Expedia, Etraveli, Traveloka show `["B2C", "B2B"]`.
+- [x] User can filter B2C and B2B OTAs. Verified: `/api/rivals?category=B2B` → 8 results (5 pure-B2B + 3 dual); `?category=B2C` → 10 results (7 pure-B2C + 3 dual).
+
+**Verification:** `alembic upgrade head` (0001 → 0002), `python data/seeds/seed.py` (15 rivals / 30 regions / 175 snapshots), `npm run lint` clean, `npm run build` (TS strict) clean, `npm test` 37/37, live `/api/rivals?category=B2B|B2C` curl confirmed.
+
 ---
 
 ### Phase 5 — Time-Period Filter + Export

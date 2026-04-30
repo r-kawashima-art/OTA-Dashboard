@@ -28,9 +28,10 @@ export function KpiHeaderBar() {
   }, [])
 
   // Filtered rival count tracks the live category filter so the header reacts
-  // to user input without needing a re-fetch.
-  const filteredRivalCount = rivals.filter(
-    (r) => r.category && activeCategories.has(r.category),
+  // to user input without needing a re-fetch. A rival counts when *any* of
+  // its categories is currently active (matches the marker-layer semantics).
+  const filteredRivalCount = rivals.filter((r) =>
+    r.categories.some((c) => activeCategories.has(c)),
   ).length
   const totalRivals = kpis?.tracked_rivals ?? rivals.length
   const isFiltered = filteredRivalCount !== totalRivals

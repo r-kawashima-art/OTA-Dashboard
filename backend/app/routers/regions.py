@@ -173,7 +173,7 @@ async def get_region_detail(
             select(
                 Rival.id,
                 Rival.name,
-                Rival.category,
+                Rival.categories,
                 RivalRegionSnapshot.market_share_pct,
                 RivalRegionSnapshot.booking_volume,
             )
@@ -186,11 +186,11 @@ async def get_region_detail(
         {
             "rival_id": str(rid),
             "name": name,
-            "category": category,
+            "categories": list(categories or []),
             "market_share_pct": share,
             "booking_volume": volume,
         }
-        for rid, name, category, share, volume in ranking_rows
+        for rid, name, categories, share, volume in ranking_rows
     ]
 
     return {

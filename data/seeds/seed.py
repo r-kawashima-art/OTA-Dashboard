@@ -24,7 +24,7 @@ RIVALS = [
         "id": str(uuid.uuid4()),
         "name": "Booking.com",
         "hq_country": "Netherlands",
-        "category": "B2C",
+        "categories": ["B2C"],
         "business_model": "Online hotel and accommodation marketplace; merchant and agency models.",
         "ai_strategy": "AI-powered pricing, personalised search, and generative travel assistants.",
         "website": "https://www.booking.com",
@@ -33,8 +33,10 @@ RIVALS = [
         "id": str(uuid.uuid4()),
         "name": "Expedia",
         "hq_country": "United States",
-        "category": "B2C",
-        "business_model": "Full-service OTA covering flights, hotels, cars, and packages.",
+        # Expedia Group serves consumers directly *and* runs Expedia Partner
+        # Solutions (EPS) — its B2B affiliate-distribution arm.
+        "categories": ["B2C", "B2B"],
+        "business_model": "Full-service OTA (consumer) plus Expedia Partner Solutions (B2B affiliate distribution).",
         "ai_strategy": "Conversational AI trip-planning (Romie), dynamic packaging via ML.",
         "website": "https://www.expedia.com",
     },
@@ -42,7 +44,7 @@ RIVALS = [
         "id": str(uuid.uuid4()),
         "name": "Trip.com",
         "hq_country": "China",
-        "category": "B2C",
+        "categories": ["B2C"],
         "business_model": "Asia-first full-service OTA; expanding globally through acquisitions.",
         "ai_strategy": "TripGenie AI assistant; demand-forecasting for flash sales.",
         "website": "https://www.trip.com",
@@ -51,7 +53,7 @@ RIVALS = [
         "id": str(uuid.uuid4()),
         "name": "Airbnb",
         "hq_country": "United States",
-        "category": "B2C",
+        "categories": ["B2C"],
         "business_model": "P2P short-term rental marketplace; host + guest fee model.",
         "ai_strategy": "AI-generated listings, smart pricing for hosts, experience recommendations.",
         "website": "https://www.airbnb.com",
@@ -60,7 +62,7 @@ RIVALS = [
         "id": str(uuid.uuid4()),
         "name": "Agoda",
         "hq_country": "Singapore",
-        "category": "B2C",
+        "categories": ["B2C"],
         "business_model": "Asia-Pacific hotel specialist; part of Booking Holdings.",
         "ai_strategy": "ML-driven competitive rate parity; personalised deal engine.",
         "website": "https://www.agoda.com",
@@ -69,7 +71,7 @@ RIVALS = [
         "id": str(uuid.uuid4()),
         "name": "MakeMyTrip",
         "hq_country": "India",
-        "category": "B2C",
+        "categories": ["B2C"],
         "business_model": "Indian full-service OTA dominating domestic flights and hotels.",
         "ai_strategy": "AI chatbot for support; predictive fare alerts.",
         "website": "https://www.makemytrip.com",
@@ -78,7 +80,7 @@ RIVALS = [
         "id": str(uuid.uuid4()),
         "name": "Kiwi.com",
         "hq_country": "Czech Republic",
-        "category": "B2C",
+        "categories": ["B2C"],
         "business_model": "Virtual interlining — combining tickets across carriers into one booking.",
         "ai_strategy": "Graph-based route optimisation; AI disruption management.",
         "website": "https://www.kiwi.com",
@@ -87,8 +89,10 @@ RIVALS = [
         "id": str(uuid.uuid4()),
         "name": "Etraveli",
         "hq_country": "Sweden",
-        "category": "B2C",
-        "business_model": "Flight-first OTA with strong European presence; white-label B2B.",
+        # Consumer-flight brand (Mytrip, GoToGate) plus a substantial
+        # white-label B2B distribution business.
+        "categories": ["B2C", "B2B"],
+        "business_model": "Flight-first OTA with strong European presence; white-label B2B distribution.",
         "ai_strategy": "Dynamic ancillary upsell using ML models.",
         "website": "https://www.etraveli.com",
     },
@@ -96,10 +100,67 @@ RIVALS = [
         "id": str(uuid.uuid4()),
         "name": "eDreams ODIGEO",
         "hq_country": "Spain",
-        "category": "B2C",
+        "categories": ["B2C"],
         "business_model": "Subscription-based OTA (Prime programme); flights & hotels.",
         "ai_strategy": "AI subscription churn prevention; personalised offer engine.",
         "website": "https://www.edreams.com",
+    },
+    # ----- B2B-only additions (Phase 4 small tweak) -----
+    {
+        "id": str(uuid.uuid4()),
+        "name": "Amadeus",
+        "hq_country": "Spain",
+        "categories": ["B2B"],
+        "business_model": "Global Distribution System (GDS) and travel-tech platform for airlines, hotels, and travel agencies.",
+        "ai_strategy": "Travel intelligence APIs; ML-powered shopping/pricing for distribution partners.",
+        "website": "https://amadeus.com",
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "name": "Hotelbeds",
+        "hq_country": "Spain",
+        "categories": ["B2B"],
+        "business_model": "Bedbank — wholesale hotel inventory sold exclusively to travel-trade buyers.",
+        "ai_strategy": "ML-driven dynamic pricing and demand forecasting for B2B hotel distribution.",
+        "website": "https://www.hotelbeds.com",
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "name": "TBO Tek",
+        "hq_country": "India",
+        "categories": ["B2B"],
+        "business_model": "Global B2B travel-distribution platform connecting travel agents with hotel, flight, and ancillary suppliers.",
+        "ai_strategy": "AI-driven content normalisation and booking-funnel personalisation for retail agents.",
+        "website": "https://www.tbo.com",
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "name": "HRS",
+        "hq_country": "Germany",
+        "categories": ["B2B"],
+        "business_model": "Corporate-travel and managed lodging platform for enterprises (TMC partnerships, programme management).",
+        "ai_strategy": "AI rate auditing and continuous-sourcing engine for corporate hotel programmes.",
+        "website": "https://www.hrs.com",
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "name": "Riya Connect",
+        "hq_country": "India",
+        "categories": ["B2B"],
+        "business_model": "B2B travel-agent platform from Riya Travel; flights, hotels, and packages for the retail-agent channel.",
+        "ai_strategy": "Agent-assist tooling and predictive cross-sell for SME agents.",
+        "website": "https://www.riyaconnect.com",
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "name": "Traveloka",
+        "hq_country": "Indonesia",
+        # Consumer super-app *and* "Traveloka for Business" corporate / agent
+        # tooling — fits the "both" category requirement.
+        "categories": ["B2C", "B2B"],
+        "business_model": "Southeast-Asian travel super-app (consumer) with a Traveloka for Business arm for corporate accounts.",
+        "ai_strategy": "Personalised recommendations and dynamic-bundle pricing across SEA markets.",
+        "website": "https://www.traveloka.com",
     },
 ]
 
@@ -268,6 +329,12 @@ RIVAL_HOME_ISO: dict[str, str] = {
     "Kiwi.com": "CZ",
     "Etraveli": "SE",
     "eDreams ODIGEO": "ES",
+    "Amadeus": "ES",
+    "Hotelbeds": "ES",
+    "TBO Tek": "IN",
+    "HRS": "DE",
+    "Riya Connect": "IN",
+    "Traveloka": "ID",
 }
 
 # KPI snapshot for the latest month. Demand index is a 0-100 score
@@ -318,16 +385,24 @@ def seed():
         COUNTRIES,
     )
 
-    # Rivals
+    # Rivals — idempotent on (name): refresh categories + metadata if the row
+    # already exists (e.g. running this seed after migration 0002 against a
+    # database that already had the original 9 single-category rivals).
     execute_values(
         cur,
         """
-        INSERT INTO rivals (id, name, hq_country, category, business_model, ai_strategy, website)
-        VALUES %s ON CONFLICT DO NOTHING
+        INSERT INTO rivals (id, name, hq_country, categories, business_model, ai_strategy, website)
+        VALUES %s
+        ON CONFLICT (name) DO UPDATE SET
+            hq_country = EXCLUDED.hq_country,
+            categories = EXCLUDED.categories,
+            business_model = EXCLUDED.business_model,
+            ai_strategy = EXCLUDED.ai_strategy,
+            website = EXCLUDED.website
         """,
         [
             (
-                r["id"], r["name"], r["hq_country"], r["category"],
+                r["id"], r["name"], r["hq_country"], r["categories"],
                 r["business_model"], r["ai_strategy"], r["website"],
             )
             for r in RIVALS
@@ -432,7 +507,7 @@ def seed():
         f"Seeded {rival_count} rivals, {region_count} regions, "
         f"{metrics_count} region_metrics, {snapshot_count} rival_region_snapshots."
     )
-    assert rival_count == 9, f"Expected 9 rivals, got {rival_count}"
+    assert rival_count == 15, f"Expected 15 rivals, got {rival_count}"
     assert region_count == 30, f"Expected 30 regions, got {region_count}"
     assert metrics_count == 30, f"Expected 30 region_metrics, got {metrics_count}"
     assert snapshot_count >= 150, f"Expected ≥150 rival_region_snapshots, got {snapshot_count}"

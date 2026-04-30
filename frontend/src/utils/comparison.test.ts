@@ -77,8 +77,8 @@ describe('buildComparisonRows', () => {
         { month: 7, value: 90 },
       ],
       rival_ranking: [
-        { rival_id: '1', name: 'Rival One', category: 'B2C', market_share_pct: 35, booking_volume: 1000 },
-        { rival_id: '2', name: 'Rival Two', category: 'B2B', market_share_pct: 20, booking_volume: 500 },
+        { rival_id: '1', name: 'Rival One', categories: ['B2C'], market_share_pct: 35, booking_volume: 1000 },
+        { rival_id: '2', name: 'Rival Two', categories: ['B2B'], market_share_pct: 20, booking_volume: 500 },
       ],
     })
     const b = region({
