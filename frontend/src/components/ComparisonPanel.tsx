@@ -1,11 +1,16 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import { useComparisonStore } from '../stores/comparisonStore'
+import { useTimePeriodStore } from '../stores/timePeriodStore'
 import {
   buildComparisonRows,
   findWinnerIndex,
   formatComparisonValue,
 } from '../utils/comparison'
+
+function detailKey(iso: string, snapshot: string | null): string {
+  return `${iso}@${snapshot ?? 'latest'}`
+}
 
 export function ComparisonPanel() {
   const selectedIsos = useComparisonStore((s) => s.selectedIsos)
@@ -13,13 +18,22 @@ export function ComparisonPanel() {
   const loading = useComparisonStore((s) => s.loading)
   const error = useComparisonStore((s) => s.error)
   const removeRegion = useComparisonStore((s) => s.removeRegion)
+  const refreshAll = useComparisonStore((s) => s.refreshAll)
+  const selectedSnapshot = useTimePeriodStore((s) => s.selected)
+
+  // Refetch every selected region when the user moves the slider so the
+  // table values stay in sync with whichever year is showing.
+  useEffect(() => {
+    if (selectedIsos.length === 0) return
+    void refreshAll(selectedSnapshot)
+  }, [selectedSnapshot, selectedIsos, refreshAll])
 
   const rows = useMemo(() => {
     const orderedDetails = selectedIsos
-      .map((iso) => details[iso])
+      .map((iso) => details[detailKey(iso, selectedSnapshot)])
       .filter((d): d is NonNullable<typeof d> => Boolean(d))
     return buildComparisonRows(orderedDetails)
-  }, [selectedIsos, details])
+  }, [selectedIsos, details, selectedSnapshot])
 
   // Render only when at least 2 regions are picked — a 1-row table would
   // show no comparative value and only steal screen space from the map.
@@ -46,8 +60,9 @@ export function ComparisonPanel() {
                 Metric
               </th>
               {selectedIsos.map((iso) => {
-                const detail = details[iso]
-                const isLoading = loading.has(iso)
+                const key = detailKey(iso, selectedSnapshot)
+                const detail = details[key]
+                const isLoading = loading.has(key)
                 return (
                   <th key={iso} scope="col" className="comparison-table__region">
                     <div className="comparison-table__region-name">

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 
-import { fetchGlobalKpis } from '../api/globalKpis'
+import { exportCsvUrl, fetchGlobalKpis } from '../api/globalKpis'
 import { useRivalStore } from '../stores/rivalStore'
+import { useTimePeriodStore } from '../stores/timePeriodStore'
 import type { GlobalKpis } from '../types'
 
 export function KpiHeaderBar() {
@@ -10,10 +11,11 @@ export function KpiHeaderBar() {
 
   const rivals = useRivalStore((s) => s.rivals)
   const activeCategories = useRivalStore((s) => s.activeCategories)
+  const selectedSnapshot = useTimePeriodStore((s) => s.selected)
 
   useEffect(() => {
     let cancelled = false
-    fetchGlobalKpis()
+    fetchGlobalKpis(selectedSnapshot)
       .then((data) => {
         if (!cancelled) setKpis(data)
       })
@@ -25,7 +27,7 @@ export function KpiHeaderBar() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [selectedSnapshot])
 
   // Filtered rival count tracks the live category filter so the header reacts
   // to user input without needing a re-fetch. A rival counts when *any* of
@@ -68,6 +70,23 @@ export function KpiHeaderBar() {
             ? `Demand index ${kpis.hottest_growth_region.demand_index}`
             : 'no snapshots yet'}
         </div>
+      </div>
+      <div className="kpi-header__meta">
+        <div className="kpi-header__updated" title="Snapshot date in the database">
+          <span className="kpi-header__label">Last Updated</span>
+          <span className="kpi-header__updated-value">
+            {kpis?.snapshot_month ?? selectedSnapshot ?? '—'}
+          </span>
+        </div>
+        <a
+          className="kpi-header__export"
+          href={exportCsvUrl(kpis?.snapshot_month ?? selectedSnapshot ?? null)}
+          // download attribute makes the browser save instead of navigate; the
+          // server's Content-Disposition still drives the filename.
+          download
+        >
+          Export CSV
+        </a>
       </div>
     </section>
   )

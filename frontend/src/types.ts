@@ -61,6 +61,9 @@ export interface RivalRankingEntry {
   categories: string[]
   market_share_pct: number
   booking_volume: number | null
+  // Worldwide rank by total booking_volume across all regions for the same
+  // snapshot month. `null` only when the rival has no global volume that month.
+  global_rank: number | null
 }
 
 export interface RegionDetail {
@@ -87,6 +90,11 @@ export interface GlobalKpis {
   tracked_rivals: number
   hottest_growth_region: HottestGrowthRegion | null
   snapshot_month: string | null
+}
+
+export interface SnapshotsResponse {
+  months: string[]
+  latest: string | null
 }
 
 export const KPI_DEFINITIONS: Record<KpiKey, KpiDefinition> = {

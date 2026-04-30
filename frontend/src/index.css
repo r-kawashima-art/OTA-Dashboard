@@ -466,14 +466,46 @@ body,
   margin-top: 1px;
 }
 
-/* KPI header bar (Phase 4, FR-04) */
+/* Time-period filter (Phase 5, FR-06) */
+.time-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+}
+
+.time-filter--static {
+  color: #64748b;
+}
+
+.time-filter__label {
+  font-weight: 500;
+  color: #475569;
+}
+
+.time-filter__slider {
+  width: 140px;
+  accent-color: #0284c7;
+  cursor: pointer;
+}
+
+.time-filter__value {
+  min-width: 3.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* KPI header bar (Phase 4, FR-04 + Phase 5 metadata column) */
 .kpi-header {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
   gap: 12px;
   padding: 12px 24px;
   background: #f1f5f9;
   border-bottom: 1px solid #e2e8f0;
+  align-items: stretch;
 }
 
 .kpi-header__error {
@@ -520,6 +552,55 @@ body,
 .kpi-header__hint {
   font-size: 0.75rem;
   color: #94a3b8;
+}
+
+/* Right-edge metadata column: snapshot date + export action (Phase 5). */
+.kpi-header__meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 4px 4px 8px;
+  border-left: 1px solid #e2e8f0;
+  min-width: 160px;
+}
+
+.kpi-header__updated {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpi-header__updated-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-header__export {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border: 1px solid #0284c7;
+  background: #0284c7;
+  color: #ffffff;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.kpi-header__export:hover {
+  background: #0369a1;
+  border-color: #0369a1;
+}
+
+.kpi-header__export:focus {
+  outline: 2px solid #0284c7;
+  outline-offset: 2px;
 }
 
 /* Comparison picker (Phase 4, FR-05) */
@@ -612,12 +693,15 @@ body,
   background: #f1f5f9;
 }
 
-/* Comparison panel (Phase 4, FR-05) */
+/* Comparison panel (Phase 4, FR-05) — grows with column count up to viewport;
+ * the inner __scroll wrapper takes over horizontal scrolling past that bound,
+ * so any number of compared regions remains usable. */
 .comparison-panel {
   position: absolute;
   bottom: 16px;
   right: 16px;
-  width: 520px;
+  width: auto;
+  min-width: 520px;
   max-width: calc(100vw - 32px);
   max-height: 50vh;
   display: flex;
@@ -685,6 +769,10 @@ body,
 .comparison-table__region {
   position: relative;
   padding-right: 24px;
+  /* Each region column keeps a readable footprint; combined with auto-width
+   * panel + inner scroll, this lets the table extend cleanly beyond the
+   * viewport once enough regions are added. */
+  min-width: 130px;
 }
 
 .comparison-table__region-name {
@@ -734,6 +822,7 @@ body,
   font-size: 0.8125rem;
   background: transparent;
   border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
 }
 
 .comparison-table__unit {

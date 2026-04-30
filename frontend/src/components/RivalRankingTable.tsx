@@ -15,7 +15,12 @@ export function RivalRankingTable({ ranking }: Props) {
         <tr>
           <th scope="col">#</th>
           <th scope="col">Rival</th>
-          <th scope="col" className="rival-ranking__num">Share</th>
+          <th scope="col" className="rival-ranking__num" title="Local market share">
+            Share
+          </th>
+          <th scope="col" className="rival-ranking__num" title="Worldwide rank by booking volume">
+            Global
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -29,6 +34,9 @@ export function RivalRankingTable({ ranking }: Props) {
               )}
             </td>
             <td className="rival-ranking__num">{r.market_share_pct.toFixed(1)}%</td>
+            <td className="rival-ranking__num">
+              {r.global_rank === null ? '—' : `#${r.global_rank}`}
+            </td>
           </tr>
         ))}
       </tbody>

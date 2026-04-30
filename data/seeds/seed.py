@@ -337,9 +337,23 @@ RIVAL_HOME_ISO: dict[str, str] = {
     "Traveloka": "ID",
 }
 
-# KPI snapshot for the latest month. Demand index is a 0-100 score
-# (travel intent proxy); avg booking value is USD per reservation.
-SNAPSHOT_MONTH = date(2026, 4, 1)
+# KPI snapshots — one per April between 2022 and 2026. Yearly granularity
+# matches FR-06 ("yearly granularity minimum") and gives the time-period
+# filter five distinct points to walk through. The latest snapshot remains
+# the canonical "current" view for endpoints that don't pass a month.
+SNAPSHOT_MONTHS = [date(year, 4, 1) for year in (2022, 2023, 2024, 2025, 2026)]
+LATEST_SNAPSHOT_MONTH = SNAPSHOT_MONTHS[-1]
+# Recovery-curve multiplier applied to demand_index, avg_booking_value, and
+# rival booking_volume per year. 2022 sits at the post-COVID rebound trough,
+# 2026 is "current". Values are deliberately monotonic so YoY differences
+# are obvious in the slider; in production this would come from real data.
+YEAR_MULTIPLIER: dict[int, float] = {
+    2022: 0.78,
+    2023: 0.86,
+    2024: 0.92,
+    2025: 0.97,
+    2026: 1.00,
+}
 REGION_METRICS = [
     ("US", 92, 412.50),
     ("GB", 78, 298.10),
@@ -409,81 +423,85 @@ def seed():
         ],
     )
 
-    # Region metrics (idempotent: replace the snapshot for the seeded month)
-    cur.execute(
-        "DELETE FROM region_metrics WHERE snapshot_month = %s",
-        (SNAPSHOT_MONTH,),
-    )
-    execute_values(
-        cur,
-        """
-        INSERT INTO region_metrics
-            (id, region_iso, snapshot_month, avg_booking_value, demand_index, top_routes, demographics)
-        VALUES %s
-        """,
-        [
-            (
-                str(uuid.uuid4()),
-                iso,
-                SNAPSHOT_MONTH,
-                avg_booking_value,
-                demand_index,
-                json.dumps(REGION_TOP_ROUTES.get(iso, [])),
-                json.dumps(REGION_DEMOGRAPHICS.get(iso, [])),
-            )
-            for iso, demand_index, avg_booking_value in REGION_METRICS
-        ],
-    )
-
-    # Rival region snapshots (idempotent: replace the whole snapshot month).
-    # Market-share generation: deterministic PRNG with a home-country bonus so
-    # MakeMyTrip dominates India, Agoda dominates APAC, etc. Shares are
-    # normalized so the top-N rivals cover ~80% of the market (the remainder
-    # represents long-tail/local operators that aren't tracked here).
-    cur.execute(
-        "DELETE FROM rival_region_snapshots WHERE snapshot_month = %s",
-        (SNAPSHOT_MONTH,),
-    )
-    rng = random.Random(42)
-
     cur.execute("SELECT id, name FROM rivals;")
     rival_by_name = {name: rid for rid, name in cur.fetchall()}
 
-    snapshot_rows: list[tuple] = []
-    for iso, _, _ in REGION_METRICS:
-        # Each region picks 5–7 of the 9 rivals to "operate" in it
-        active_rivals = rng.sample(list(RIVAL_HOME_ISO.keys()), k=rng.randint(5, 7))
-        raw_scores = []
-        for name in active_rivals:
-            base = rng.uniform(3, 10)
-            if RIVAL_HOME_ISO[name] == iso:
-                base *= 4.0  # strong home-country bias
-            raw_scores.append(base)
-        total = sum(raw_scores)
-        # Normalize to sum to 80% of market; remaining 20% is unmodeled competition.
-        for name, score in zip(active_rivals, raw_scores):
-            share = round(score / total * 80.0, 2)
-            booking_volume = int(share * 15_000)  # plausible booking volume
-            snapshot_rows.append(
+    # Region metrics + rival snapshots are seeded for every (year, region) pair.
+    # Idempotent within a snapshot month: we DELETE-then-INSERT, so re-running
+    # the seed always converges on the canonical curve.
+    for snap in SNAPSHOT_MONTHS:
+        mult = YEAR_MULTIPLIER[snap.year]
+
+        cur.execute(
+            "DELETE FROM region_metrics WHERE snapshot_month = %s",
+            (snap,),
+        )
+        execute_values(
+            cur,
+            """
+            INSERT INTO region_metrics
+                (id, region_iso, snapshot_month, avg_booking_value, demand_index, top_routes, demographics)
+            VALUES %s
+            """,
+            [
                 (
                     str(uuid.uuid4()),
-                    rival_by_name[name],
                     iso,
-                    share,
-                    booking_volume,
-                    SNAPSHOT_MONTH,
+                    snap,
+                    round(avg_booking_value * mult, 2),
+                    int(round(demand_index * mult)),
+                    json.dumps(REGION_TOP_ROUTES.get(iso, [])),
+                    json.dumps(REGION_DEMOGRAPHICS.get(iso, [])),
                 )
-            )
+                for iso, demand_index, avg_booking_value in REGION_METRICS
+            ],
+        )
 
-    execute_values(
-        cur,
-        """
-        INSERT INTO rival_region_snapshots
-            (id, rival_id, region_iso, market_share_pct, booking_volume, snapshot_month)
-        VALUES %s
-        """,
-        snapshot_rows,
-    )
+        # Rival region snapshots (idempotent per snapshot month). Each year
+        # uses the same PRNG seed so a region keeps its same active rivals
+        # and rank order over time — only volumes scale with `mult`. This
+        # produces a believable historical trend per rival while leaving
+        # the home-country dominance (Expedia/US, MakeMyTrip/IN, etc.) intact.
+        cur.execute(
+            "DELETE FROM rival_region_snapshots WHERE snapshot_month = %s",
+            (snap,),
+        )
+        rng = random.Random(42)
+        snapshot_rows: list[tuple] = []
+        for iso, _, _ in REGION_METRICS:
+            # Each region picks 5–7 rivals to "operate" in it
+            active_rivals = rng.sample(list(RIVAL_HOME_ISO.keys()), k=rng.randint(5, 7))
+            raw_scores = []
+            for name in active_rivals:
+                base = rng.uniform(3, 10)
+                if RIVAL_HOME_ISO[name] == iso:
+                    base *= 4.0  # strong home-country bias
+                raw_scores.append(base)
+            total = sum(raw_scores)
+            # Normalize to sum to 80% of market; remaining 20% is unmodeled competition.
+            for name, score in zip(active_rivals, raw_scores):
+                share = round(score / total * 80.0, 2)
+                booking_volume = int(share * 15_000 * mult)
+                snapshot_rows.append(
+                    (
+                        str(uuid.uuid4()),
+                        rival_by_name[name],
+                        iso,
+                        share,
+                        booking_volume,
+                        snap,
+                    )
+                )
+
+        execute_values(
+            cur,
+            """
+            INSERT INTO rival_region_snapshots
+                (id, rival_id, region_iso, market_share_pct, booking_volume, snapshot_month)
+            VALUES %s
+            """,
+            snapshot_rows,
+        )
 
     conn.commit()
     cur.execute("SELECT COUNT(*) FROM rivals;")
@@ -492,25 +510,32 @@ def seed():
     region_count = cur.fetchone()[0]
     cur.execute(
         "SELECT COUNT(*) FROM region_metrics WHERE snapshot_month = %s",
-        (SNAPSHOT_MONTH,),
+        (LATEST_SNAPSHOT_MONTH,),
     )
     metrics_count = cur.fetchone()[0]
     cur.execute(
         "SELECT COUNT(*) FROM rival_region_snapshots WHERE snapshot_month = %s",
-        (SNAPSHOT_MONTH,),
+        (LATEST_SNAPSHOT_MONTH,),
     )
     snapshot_count = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(DISTINCT snapshot_month) FROM region_metrics;")
+    distinct_months = cur.fetchone()[0]
     cur.close()
     conn.close()
 
     print(
         f"Seeded {rival_count} rivals, {region_count} regions, "
-        f"{metrics_count} region_metrics, {snapshot_count} rival_region_snapshots."
+        f"{metrics_count} region_metrics @ {LATEST_SNAPSHOT_MONTH}, "
+        f"{snapshot_count} rival_region_snapshots @ {LATEST_SNAPSHOT_MONTH}, "
+        f"{distinct_months} distinct snapshot months."
     )
     assert rival_count == 15, f"Expected 15 rivals, got {rival_count}"
     assert region_count == 30, f"Expected 30 regions, got {region_count}"
-    assert metrics_count == 30, f"Expected 30 region_metrics, got {metrics_count}"
-    assert snapshot_count >= 150, f"Expected ≥150 rival_region_snapshots, got {snapshot_count}"
+    assert metrics_count == 30, f"Expected 30 region_metrics for latest month, got {metrics_count}"
+    assert snapshot_count >= 150, f"Expected ≥150 rival_region_snapshots for latest, got {snapshot_count}"
+    assert distinct_months == len(SNAPSHOT_MONTHS), (
+        f"Expected {len(SNAPSHOT_MONTHS)} distinct snapshot months, got {distinct_months}"
+    )
     print("PASS: seed counts verified.")
 
 

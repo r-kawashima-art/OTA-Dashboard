@@ -8,13 +8,16 @@ import { KpiSelector } from './components/KpiSelector'
 import { RegionPanel } from './components/RegionPanel'
 import { RivalCategoryFilter } from './components/RivalCategoryFilter'
 import { RivalSummaryCard } from './components/RivalSummaryCard'
+import { TimePeriodFilter } from './components/TimePeriodFilter'
 import { WorldMap } from './components/WorldMap'
 import { useRivalStore } from './stores/rivalStore'
+import { useTimePeriodStore } from './stores/timePeriodStore'
 
 function App() {
   const setRivals = useRivalStore((s) => s.setRivals)
   const setLoadError = useRivalStore((s) => s.setLoadError)
   const loadError = useRivalStore((s) => s.loadError)
+  const loadSnapshots = useTimePeriodStore((s) => s.loadSnapshots)
 
   useEffect(() => {
     let cancelled = false
@@ -32,11 +35,16 @@ function App() {
     }
   }, [setRivals, setLoadError])
 
+  useEffect(() => {
+    void loadSnapshots()
+  }, [loadSnapshots])
+
   return (
     <div className="app-shell">
       <header className="app-header">
         <h1 className="app-title">OTA Competitive Intelligence Dashboard</h1>
         <div className="app-header__controls">
+          <TimePeriodFilter />
           <ComparisonPicker />
           <RivalCategoryFilter />
           <KpiSelector />

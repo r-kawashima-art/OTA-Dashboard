@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 
 import { fetchRegions } from '../api/regions'
-import { COMPARISON_MAX, useComparisonStore } from '../stores/comparisonStore'
+import { useComparisonStore } from '../stores/comparisonStore'
+import { useTimePeriodStore } from '../stores/timePeriodStore'
 
 interface RegionOption {
   iso_code: string
@@ -14,6 +15,7 @@ export function ComparisonPicker() {
   const addRegion = useComparisonStore((s) => s.addRegion)
   const removeRegion = useComparisonStore((s) => s.removeRegion)
   const clear = useComparisonStore((s) => s.clear)
+  const selectedSnapshot = useTimePeriodStore((s) => s.selected)
 
   useEffect(() => {
     let cancelled = false
@@ -40,9 +42,6 @@ export function ComparisonPicker() {
     }
   }, [])
 
-  const remaining = COMPARISON_MAX - selectedIsos.length
-  const atCapacity = remaining <= 0
-
   const availableOptions = useMemo(
     () => options.filter((o) => !selectedIsos.includes(o.iso_code)),
     [options, selectedIsos],
@@ -52,7 +51,7 @@ export function ComparisonPicker() {
     const iso = event.target.value
     event.target.value = ''
     if (!iso) return
-    void addRegion(iso)
+    void addRegion(iso, selectedSnapshot)
   }
 
   const labelById = useMemo(() => {
@@ -80,7 +79,7 @@ export function ComparisonPicker() {
         ))}
         {selectedIsos.length === 0 && (
           <span className="comparison-picker__placeholder">
-            pick up to {COMPARISON_MAX} regions
+            pick regions to compare
           </span>
         )}
       </div>
@@ -88,11 +87,11 @@ export function ComparisonPicker() {
         className="comparison-picker__select"
         defaultValue=""
         onChange={onSelect}
-        disabled={atCapacity || availableOptions.length === 0}
+        disabled={availableOptions.length === 0}
         aria-label="Add region to comparison"
       >
         <option value="" disabled>
-          {atCapacity ? `Max ${COMPARISON_MAX} reached` : '+ Add region'}
+          {availableOptions.length === 0 ? 'All regions selected' : '+ Add region'}
         </option>
         {availableOptions.map((o) => (
           <option key={o.iso_code} value={o.iso_code}>

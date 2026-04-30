@@ -3,16 +3,59 @@ import { create } from 'zustand'
 import { fetchRegionDetail } from '../api/regionDetail'
 import type { RegionDetail } from '../types'
 
-export const COMPARISON_MAX = 3
-
 interface ComparisonState {
   selectedIsos: string[]
+  // Cached details are keyed by `${iso}@${snapshot ?? 'latest'}` so flipping
+  // the time-period slider doesn't show stale numbers from the prior year.
   details: Record<string, RegionDetail>
   loading: Set<string>
   error: string | null
-  addRegion: (iso: string) => Promise<void>
+  currentSnapshot: string | null
+  addRegion: (iso: string, snapshotMonth?: string | null) => Promise<void>
   removeRegion: (iso: string) => void
+  refreshAll: (snapshotMonth: string | null) => Promise<void>
   clear: () => void
+}
+
+function detailKey(iso: string, snapshotMonth: string | null | undefined): string {
+  return `${iso}@${snapshotMonth ?? 'latest'}`
+}
+
+async function fetchOne(
+  iso: string,
+  snapshotMonth: string | null | undefined,
+  set: (
+    partial:
+      | Partial<ComparisonState>
+      | ((state: ComparisonState) => Partial<ComparisonState>),
+  ) => void,
+  get: () => ComparisonState,
+): Promise<void> {
+  const key = detailKey(iso, snapshotMonth)
+  const { details, loading } = get()
+  if (details[key] || loading.has(key)) return
+  const nextLoading = new Set(loading)
+  nextLoading.add(key)
+  set({ loading: nextLoading, error: null })
+  try {
+    const detail = await fetchRegionDetail(iso, snapshotMonth)
+    const after = get()
+    const cleared = new Set(after.loading)
+    cleared.delete(key)
+    // If the user removed the region while the request was open, just clear
+    // the loading flag without writing detail — avoids resurrecting a chip.
+    if (!after.selectedIsos.includes(iso)) {
+      set({ loading: cleared })
+      return
+    }
+    set({ details: { ...after.details, [key]: detail }, loading: cleared })
+  } catch (err) {
+    const after = get()
+    const cleared = new Set(after.loading)
+    cleared.delete(key)
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    set({ loading: cleared, error: message })
+  }
 }
 
 export const useComparisonStore = create<ComparisonState>((set, get) => ({
@@ -20,46 +63,21 @@ export const useComparisonStore = create<ComparisonState>((set, get) => ({
   details: {},
   loading: new Set<string>(),
   error: null,
-  addRegion: async (iso) => {
-    const { selectedIsos, details, loading } = get()
+  currentSnapshot: null,
+  addRegion: async (iso, snapshotMonth) => {
+    const { selectedIsos } = get()
     if (selectedIsos.includes(iso)) return
-    if (selectedIsos.length >= COMPARISON_MAX) return
-
-    set({ selectedIsos: [...selectedIsos, iso] })
-
-    if (details[iso] || loading.has(iso)) return
-    const nextLoading = new Set(loading)
-    nextLoading.add(iso)
-    set({ loading: nextLoading, error: null })
-
-    try {
-      const detail = await fetchRegionDetail(iso)
-      const after = get()
-      // Drop the in-flight fetch silently if the user removed the region while
-      // the request was open — avoids surfacing a stale row in the table.
-      if (!after.selectedIsos.includes(iso)) {
-        const cleared = new Set(after.loading)
-        cleared.delete(iso)
-        set({ loading: cleared })
-        return
-      }
-      const cleared = new Set(after.loading)
-      cleared.delete(iso)
-      set({
-        details: { ...after.details, [iso]: detail },
-        loading: cleared,
-      })
-    } catch (err) {
-      const after = get()
-      const cleared = new Set(after.loading)
-      cleared.delete(iso)
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      set({ loading: cleared, error: message })
-    }
+    set({ selectedIsos: [...selectedIsos, iso], currentSnapshot: snapshotMonth ?? null })
+    await fetchOne(iso, snapshotMonth ?? null, set, get)
   },
   removeRegion: (iso) =>
     set((state) => ({
       selectedIsos: state.selectedIsos.filter((c) => c !== iso),
     })),
+  refreshAll: async (snapshotMonth) => {
+    set({ currentSnapshot: snapshotMonth })
+    const { selectedIsos } = get()
+    await Promise.all(selectedIsos.map((iso) => fetchOne(iso, snapshotMonth, set, get)))
+  },
   clear: () => set({ selectedIsos: [], error: null }),
 }))
