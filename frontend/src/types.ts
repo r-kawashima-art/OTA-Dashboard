@@ -74,6 +74,19 @@ export interface RegionDetail {
   rival_ranking: RivalRankingEntry[]
 }
 
+export interface HottestGrowthRegion {
+  iso_code: string
+  name: string
+  demand_index: number
+}
+
+export interface GlobalKpis {
+  markets_covered: number
+  tracked_rivals: number
+  hottest_growth_region: HottestGrowthRegion | null
+  snapshot_month: string | null
+}
+
 export const KPI_DEFINITIONS: Record<KpiKey, KpiDefinition> = {
   demand_index: {
     key: 'demand_index',

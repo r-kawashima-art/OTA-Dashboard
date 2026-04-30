@@ -97,19 +97,19 @@ Build a world-map-based competitive intelligence dashboard for the OTA president
 
 ---
 
-### Phase 4 — KPI Header + Comparison View
+### Phase 4 — KPI Header + Comparison View ✅ [COMPLETED 2026-04-30]
 
 **Goal:** Satisfy FR-04 and FR-05.
 
-| Task | Output | Acceptance | Verification |
-|---|---|---|---|
-| Backend /api/kpis/global | API | Returns 3 global KPIs | `curl` JSON verify |
-| KPI header bar | Header component | Updates when filters change | Filter integration test |
-| Multi-select picker | Select widget | Enforces max 3 countries | Manual selection edge-case test |
-| Comparison table | Table | Columns align per selection | Cross-reference table data |
-| Highlight winner cell | Visual diff | Highest value is green | Manual data check |
+| ID | Task | Output | Acceptance | Verification | Status |
+|---|---|---|---|---|---|
+| T-4.1 | Backend `/api/kpis/global` | [backend/app/routers/kpis.py](../backend/app/routers/kpis.py) | Returns `markets_covered`, `tracked_rivals`, `hottest_growth_region`, `snapshot_month`; latency < 200ms | `curl -sw '\n%{time_total}s\n' http://localhost:8000/api/kpis/global` → 30 / 9 / US (92) / 2026-04-01 in 33ms | ✅ |
+| T-4.2 | KPI header bar | [KpiHeaderBar.tsx](../frontend/src/components/KpiHeaderBar.tsx) + [api/globalKpis.ts](../frontend/src/api/globalKpis.ts) | Three-tile bar; "Tracked Rivals" recomputes live from `rivalStore.activeCategories` | Toggle category chips → `filteredRivalCount` re-renders without re-fetch | ✅ |
+| T-4.3 | Multi-select picker | [ComparisonPicker.tsx](../frontend/src/components/ComparisonPicker.tsx) + [comparisonStore.ts](../frontend/src/stores/comparisonStore.ts) | Hard cap of 3 chips; `<select>` disables at capacity; chips removable; restricted to seeded regions | `addRegion` no-ops past `COMPARISON_MAX`; dropdown shows only `demand_index !== null` regions | ✅ |
+| T-4.4 | Comparison table | [ComparisonPanel.tsx](../frontend/src/components/ComparisonPanel.tsx) | 5 metric rows × ≤3 region columns aligned by `selectedIsos` order; renders only when ≥2 regions picked | `buildComparisonRows` unit tests assert column order and values per region | ✅ |
+| T-4.5 | Highlight winner cell | [comparison.ts](../frontend/src/utils/comparison.ts) + [comparison.test.ts](../frontend/src/utils/comparison.test.ts) | Highest value gets `comparison-table__cell--winner` (green); ties produce no winner; null/NaN never wins | `npm test` — 13/13 comparison tests pass (37/37 total) | ✅ |
 
-**Milestone:** President can compare 3 regions in a table with a single click flow.
+**Milestone:** President can compare up to 3 regions in a table with row-level winner highlighting; KPI header bar reflects rival-category filter live. Verified via `npm run lint`, `npm run build` (TS strict), `npm test` (37/37), and live `/api/kpis/global` curl.
 
 ---
 
